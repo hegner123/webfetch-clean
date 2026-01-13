@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "webfetch-clean": {
+      "command": "webfetch-clean",
+      "args": ["--mcp"]
+    }
+  }
+}
