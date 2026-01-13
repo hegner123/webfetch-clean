@@ -238,13 +238,24 @@ The tool provides clear error messages for common issues:
 
 ## Contributing
 
-Contributions welcome! Please:
+Contributions are welcome! We appreciate bug reports, feature requests, documentation improvements, and code contributions.
 
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on:
+- Development workflow and setup
+- Coding standards and style guide
+- Testing requirements
+- Commit message conventions
+- Pull request process
+
+Quick start:
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes following our coding standards
+4. Add tests for new functionality
+5. Commit using conventional commit format
+6. Push and create a pull request
+
+For bug reports and feature requests, please use our [issue templates](https://github.com/hegner123/webfetch-clean/issues/new/choose).
 
 ## License
 
