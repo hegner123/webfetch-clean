@@ -24,8 +24,10 @@ func CleanHTML(html string, preserveMainOnly bool, removeImages bool) (string, e
 	if preserveMainOnly {
 		main := doc.Find("main, article").First()
 		if main.Length() > 0 {
+			// Get the HTML of main/article before modifying the document
+			mainHTML, _ := main.Html()
 			// Replace entire body with just the main/article content
-			doc.Find("body").Empty().AppendSelection(main)
+			doc.Find("body").SetHtml(mainHTML)
 		}
 	}
 

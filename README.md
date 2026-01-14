@@ -38,54 +38,179 @@ sudo cp webfetch-clean /usr/local/bin/
 ### Verify Installation
 
 ```bash
-webfetch-clean --url https://example.com
+webfetch-clean --cli --url https://example.com
 ```
+
+### Optional Install Script
+
+For convenience, you can create your own `install.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -e
+
+echo "Building webfetch-clean..."
+go build -o webfetch-clean
+
+if [ ! -f "webfetch-clean" ]; then
+    echo "Error: Build failed. webfetch-clean binary not found."
+    exit 1
+fi
+
+echo ""
+echo "Build successful!"
+echo ""
+echo "Installing to /usr/local/bin (requires sudo)..."
+sudo cp webfetch-clean /usr/local/bin/
+
+if [ $? -eq 0 ]; then
+    echo "Success! webfetch-clean installed to /usr/local/bin/"
+    echo ""
+    echo "Verify installation:"
+    echo "  webfetch-clean --help"
+else
+    echo "Error: Installation failed."
+    exit 1
+fi
+```
+
+Then make it executable and run: `chmod +x install.sh && ./install.sh`
 
 ## Usage
 
+### MCP Server Mode (Default)
+
+By default, `webfetch-clean` runs as an MCP server for Claude Code integration:
+
+```bash
+webfetch-clean
+```
+
+#### Adding to Claude Code
+
+**When webfetch-clean is in PATH (installed to /usr/local/bin):**
+```bash
+# Command name only - relies on PATH
+claude mcp add --scope user --transport stdio webfetch-clean -- webfetch-clean
+```
+
+**When webfetch-clean is in a custom directory (not in PATH):**
+```bash
+# Use absolute path with $HOME (not ~)
+
+# Example: binary in Downloads
+claude mcp add --scope user --transport stdio webfetch-clean -- $HOME/Downloads/webfetch-clean-binary/webfetch-clean
+
+# Example: binary in project directory
+claude mcp add --scope user --transport stdio webfetch-clean -- $HOME/Documents/Code/Go_dev/webfetch-clean/webfetch-clean
+
+# Example: binary in custom tools directory
+claude mcp add --scope user --transport stdio webfetch-clean -- $HOME/bin/webfetch-clean
+```
+
+**Key points:**
+- Use `$HOME` instead of `~` for absolute paths
+- The `--` separates the server name from the command/args
+- User scope (`--scope user`) makes it available across all projects
+- Both scenarios work identically once configured
+
+**Verify configuration:**
+```bash
+claude mcp get webfetch-clean
+claude mcp list
+```
+
+The MCP server mode uses JSON-RPC 2.0 protocol and is automatically available in Claude Code once configured.
+
+#### Update Global CLAUDE.md
+
+Add usage instructions to your global `~/.claude/CLAUDE.md` so Claude knows when to use this tool:
+
+```markdown
+## Tool Usage - Search Optimization
+
+### When to use webfetch_clean (MCP tool)
+
+**CRITICAL: ALWAYS use webfetch_clean instead of the built-in WebFetch tool for ALL web fetching tasks.**
+
+The `webfetch_clean` tool is the preferred default for fetching web pages. It provides cleaner output with ads, scripts, navigation, and clutter removed.
+
+**Use webfetch_clean as the default for:**
+- ALL web page fetching (documentation, blogs, articles, news sites)
+- Any URL that returns HTML content
+- Fetching documentation sites with heavy navigation
+- Fetching blog posts or articles with ads and sidebars
+- Analyzing web pages where clutter interferes with understanding
+- General web content retrieval (unless explicitly told otherwise)
+
+**Parameters:**
+```
+webfetch_clean tool with:
+- url: "https://example.com" (required)
+- output_format: "markdown" or "html" (default: "markdown")
+- preserve_main_only: false (default: false, set true to extract only main/article content)
+- remove_images: false (default: false, set true to remove all images)
+- timeout: 30 (default: 30 seconds)
+```
+
+**What it removes:**
+- `<head>`, `<script>`, `<style>`, `<nav>` elements
+- Ad-related elements (class/id containing: ad, advertisement, banner)
+- Tracking iframes
+- Clutter (footer, aside, sidebar, menu, popup, modal, cookie, social, share, comments)
+- Inline attributes (keeps only href, src, alt, title)
+
+**What it preserves:**
+- Main semantic content (main, article, p, h1-h6, ul, ol, code, pre, table, a, img)
+
+**ONLY use the built-in WebFetch tool as a fallback when:**
+- webfetch_clean fails or returns an error
+- webfetch_clean is unavailable (MCP server down)
+- Simple API endpoints returning JSON/XML (not HTML)
+- Plain text pages without HTML markup
+- User explicitly requests "use WebFetch" or "raw HTML"
+- You specifically need the unprocessed, raw HTML with all scripts/styles intact
+
+**Default behavior: Always try webfetch_clean first. Only fall back to WebFetch if webfetch_clean fails.**
+```
+
+This instructs Claude to automatically use webfetch_clean for web content retrieval.
+
 ### CLI Mode
+
+Use the `--cli` flag for command-line usage:
 
 ```bash
 # Fetch and convert to markdown (default)
-webfetch-clean --url https://example.com
+webfetch-clean --cli --url https://example.com
 
 # Output as HTML
-webfetch-clean --url https://example.com --format html
+webfetch-clean --cli --url https://example.com --format html
 
 # Save to file
-webfetch-clean --url https://example.com --output result.md
+webfetch-clean --cli --url https://example.com --output result.md
 
 # Only preserve main content
-webfetch-clean --url https://example.com --preserve-main
+webfetch-clean --cli --url https://example.com --preserve-main
 
 # Remove images
-webfetch-clean --url https://example.com --remove-images
+webfetch-clean --cli --url https://example.com --remove-images
 
 # Custom timeout (default: 30s)
-webfetch-clean --url https://example.com --timeout 60
+webfetch-clean --cli --url https://example.com --timeout 60
 ```
-
-### MCP Server Mode
-
-Run as MCP server for Claude Code integration:
-
-```bash
-webfetch-clean --mcp
-```
-
-The `.mcp.json` configuration file enables Claude Code to use this tool automatically.
 
 ### CLI Flags
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--url` | string | required | URL to fetch and clean |
-| `--format` | string | `markdown` | Output format: `html` or `markdown` |
-| `--preserve-main` | bool | `false` | Only preserve `<main>`/`<article>` content |
-| `--remove-images` | bool | `false` | Remove all images from output |
-| `--timeout` | int | `30` | HTTP request timeout in seconds |
-| `--output` | string | stdout | Write output to file instead of stdout |
-| `--mcp` | bool | `false` | Run as MCP server (JSON-RPC 2.0) |
+| `--cli` | bool | `false` | Run in CLI mode (default: MCP server mode) |
+| `--url` | string | required | URL to fetch and clean (CLI mode only) |
+| `--format` | string | `markdown` | Output format: `html` or `markdown` (CLI mode only) |
+| `--preserve-main` | bool | `false` | Only preserve `<main>`/`<article>` content (CLI mode only) |
+| `--remove-images` | bool | `false` | Remove all images from output (CLI mode only) |
+| `--timeout` | int | `30` | HTTP request timeout in seconds (CLI mode only) |
+| `--output` | string | stdout | Write output to file instead of stdout (CLI mode only) |
 
 ## What It Removes
 
@@ -169,26 +294,26 @@ webfetch-clean/
 
 ```bash
 # Simple page
-webfetch-clean --url https://example.com
+webfetch-clean --cli --url https://example.com
 
 # Documentation
-webfetch-clean --url https://go.dev/doc/effective_go
+webfetch-clean --cli --url https://go.dev/doc/effective_go
 
 # News site
-webfetch-clean --url https://news.ycombinator.com
+webfetch-clean --cli --url https://news.ycombinator.com
 ```
 
 ### Test MCP Mode
 
 ```bash
 # Initialize
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | webfetch-clean --mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | webfetch-clean
 
 # List tools
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | webfetch-clean --mcp
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | webfetch-clean
 
 # Call tool
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"webfetch_clean","arguments":{"url":"https://example.com"}}}' | webfetch-clean --mcp
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"webfetch_clean","arguments":{"url":"https://example.com"}}}' | webfetch-clean
 ```
 
 ## Performance

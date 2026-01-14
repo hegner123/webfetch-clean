@@ -16,7 +16,7 @@ type Config struct {
 	RemoveImages    bool
 	Timeout         int
 	OutputFile      string
-	MCPMode         bool
+	CLIMode         bool
 }
 
 // CleanResult represents the result of cleaning a URL
@@ -103,24 +103,24 @@ type ContentItem struct {
 func main() {
 	config := parseFlags()
 
-	if config.MCPMode {
-		runMCPServer()
+	if config.CLIMode {
+		runCLI(config)
 		return
 	}
 
-	runCLI(config)
+	runMCPServer()
 }
 
 func parseFlags() Config {
 	config := Config{}
 
-	flag.BoolVar(&config.MCPMode, "mcp", false, "Run as MCP server")
+	flag.BoolVar(&config.CLIMode, "cli", false, "Run in CLI mode (default: MCP server mode)")
 	flag.StringVar(&config.URL, "url", "", "URL to fetch (required in CLI mode)")
-	flag.StringVar(&config.Format, "format", "markdown", "Output format: html or markdown")
-	flag.BoolVar(&config.PreserveMain, "preserve-main", false, "Only preserve <main>/<article> content")
-	flag.BoolVar(&config.RemoveImages, "remove-images", false, "Remove all images")
-	flag.IntVar(&config.Timeout, "timeout", 30, "HTTP timeout in seconds")
-	flag.StringVar(&config.OutputFile, "output", "", "Write output to file (default: stdout)")
+	flag.StringVar(&config.Format, "format", "markdown", "Output format: html or markdown (CLI mode only)")
+	flag.BoolVar(&config.PreserveMain, "preserve-main", false, "Only preserve <main>/<article> content (CLI mode only)")
+	flag.BoolVar(&config.RemoveImages, "remove-images", false, "Remove all images (CLI mode only)")
+	flag.IntVar(&config.Timeout, "timeout", 30, "HTTP timeout in seconds (CLI mode only)")
+	flag.StringVar(&config.OutputFile, "output", "", "Write output to file (default: stdout, CLI mode only)")
 
 	flag.Parse()
 

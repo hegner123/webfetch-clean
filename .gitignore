@@ -20,6 +20,12 @@ go.work
 # Build output
 webfetch-clean
 
+# Installation scripts (security - users should write their own)
+install.sh
+
+# Trash directory
+trash/
+
 # IDE
 .idea/
 .vscode/
