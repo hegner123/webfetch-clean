@@ -1,3 +1,4 @@
+// Package main provides HTML cleaning functionality for the webfetch-clean tool.
 package main
 
 import (
@@ -25,7 +26,10 @@ func CleanHTML(html string, preserveMainOnly bool, removeImages bool) (string, e
 		main := doc.Find("main, article").First()
 		if main.Length() > 0 {
 			// Get the HTML of main/article before modifying the document
-			mainHTML, _ := main.Html()
+			mainHTML, err := main.Html()
+			if err != nil {
+				return "", fmt.Errorf("failed to extract main content: %w", err)
+			}
 			// Replace entire body with just the main/article content
 			doc.Find("body").SetHtml(mainHTML)
 		}
@@ -35,7 +39,7 @@ func CleanHTML(html string, preserveMainOnly bool, removeImages bool) (string, e
 	doc.Find("head, script, style, nav").Remove()
 
 	// Pass 2: Remove ad-related elements (by class/id containing "ad", "advertisement", "banner")
-	doc.Find("[class*='ad' i], [id*='ad' i]").Each(func(i int, s *goquery.Selection) {
+	doc.Find("[class*='ad' i], [id*='ad' i]").Each(func(_ int, s *goquery.Selection) {
 		// Check if it's actually ad-related (not "read", "header", "thread", etc.)
 		class, _ := s.Attr("class")
 		id, _ := s.Attr("id")
@@ -64,7 +68,7 @@ func CleanHTML(html string, preserveMainOnly bool, removeImages bool) (string, e
 
 	// More specific ad removals
 	doc.Find("[class*='advertisement' i], [id*='advertisement' i]").Remove()
-	doc.Find("[class*='banner' i], [id*='banner' i]").Each(func(i int, s *goquery.Selection) {
+	doc.Find("[class*='banner' i], [id*='banner' i]").Each(func(_ int, s *goquery.Selection) {
 		// Keep elements with "banner" that might be headers, but remove actual ad banners
 		class, _ := s.Attr("class")
 		if !strings.Contains(strings.ToLower(class), "header") {
@@ -92,10 +96,11 @@ func CleanHTML(html string, preserveMainOnly bool, removeImages bool) (string, e
 	}
 
 	// Pass 6: Strip inline attributes (keep only semantic ones)
-	doc.Find("*").Each(func(i int, s *goquery.Selection) {
+	doc.Find("*").Each(func(_ int, s *goquery.Selection) {
 		// Get all attributes
-		attrs := []string{}
-		for _, attr := range s.Get(0).Attr {
+		nodeAttrs := s.Get(0).Attr
+		attrs := make([]string, 0, len(nodeAttrs))
+		for _, attr := range nodeAttrs {
 			attrs = append(attrs, attr.Key)
 		}
 
