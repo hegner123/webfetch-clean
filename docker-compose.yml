@@ -26,6 +26,8 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    environment:
+      - SITE_ADDRESS=${SITE_ADDRESS:-localhost}
     ports:
       - "80:80"
       - "443:443"
