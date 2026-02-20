@@ -10,7 +10,7 @@ import (
 
 // CleanHTML cleans the HTML by removing ads, scripts, styles, navigation, and other clutter.
 // Returns the cleaned HTML as a string.
-func CleanHTML(html string, preserveMainOnly bool, removeImages bool) (string, error) {
+func CleanHTML(html string, preserveMainOnly bool, removeImages bool, stripLinks bool) (string, error) {
 	if html == "" {
 		return "", fmt.Errorf("HTML content cannot be empty")
 	}
@@ -81,21 +81,49 @@ func CleanHTML(html string, preserveMainOnly bool, removeImages bool) (string, e
 
 	// Pass 4: Remove clutter elements
 	doc.Find("footer, aside").Remove()
-	doc.Find("[class*='sidebar' i], [id*='sidebar' i]").Remove()
-	doc.Find("[class*='menu' i]:not(main *, article *)").Remove() // Keep menus inside main content
-	doc.Find("[class*='popup' i], [id*='popup' i]").Remove()
-	doc.Find("[class*='modal' i], [id*='modal' i]").Remove()
-	doc.Find("[class*='cookie' i], [id*='cookie' i]").Remove()
-	doc.Find("[class*='social' i], [id*='social' i]").Remove()
-	doc.Find("[class*='share' i], [id*='share' i]").Remove()
-	doc.Find("[class*='comment' i], [id*='comment' i]").Remove()
+
+	// Sidebar removal: skip elements where "sidebar" only appears negated (e.g. "no-sidebar")
+	doc.Find("[class*='sidebar' i], [id*='sidebar' i]").Each(func(_ int, s *goquery.Selection) {
+		nodeName := goquery.NodeName(s)
+		if nodeName == "body" || nodeName == "html" {
+			return
+		}
+		class, _ := s.Attr("class")
+		id, _ := s.Attr("id")
+		combined := strings.ToLower(class + " " + id)
+		// Strip negated references, then check if "sidebar" still appears
+		negations := []string{"no-sidebar", "no_sidebar", "without-sidebar", "without_sidebar"}
+		stripped := combined
+		for _, neg := range negations {
+			stripped = strings.ReplaceAll(stripped, neg, "")
+		}
+		if strings.Contains(stripped, "sidebar") {
+			s.Remove()
+		}
+	})
+
+	// Guard all clutter selectors against accidentally removing body/html
+	doc.Find("[class*='menu' i]:not(main *, article *)").Not("body").Not("html").Remove()
+	doc.Find("[class*='popup' i], [id*='popup' i]").Not("body").Not("html").Remove()
+	doc.Find("[class*='modal' i], [id*='modal' i]").Not("body").Not("html").Remove()
+	doc.Find("[class*='cookie' i], [id*='cookie' i]").Not("body").Not("html").Remove()
+	doc.Find("[class*='social' i], [id*='social' i]").Not("body").Not("html").Remove()
+	doc.Find("[class*='share' i], [id*='share' i]").Not("body").Not("html").Remove()
+	doc.Find("[class*='comment' i], [id*='comment' i]").Not("body").Not("html").Remove()
 
 	// Pass 5: Remove images if requested
 	if removeImages {
 		doc.Find("img").Remove()
 	}
 
-	// Pass 6: Strip inline attributes (keep only semantic ones)
+	// Pass 6: Strip links if requested (replace <a> with text content)
+	if stripLinks {
+		doc.Find("a").Each(func(_ int, s *goquery.Selection) {
+			s.ReplaceWithHtml(s.Text())
+		})
+	}
+
+	// Pass 7: Strip inline attributes (keep only semantic ones)
 	doc.Find("*").Each(func(_ int, s *goquery.Selection) {
 		// Get all attributes
 		nodeAttrs := s.Get(0).Attr

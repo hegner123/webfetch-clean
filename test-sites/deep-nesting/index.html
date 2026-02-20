@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Deep Nesting Test - Stress Test for webfetch-clean</title>
+    <style>
+        .wrapper { padding: 5px; }
+        .container { margin: 3px; }
+        .box { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="box">
+                <div class="wrapper">
+                    <div class="container">
+                        <div class="box">
+                            <div class="wrapper">
+                                <div class="container">
+                                    <div class="box">
+                                        <div class="wrapper">
+                                            <div class="container">
+                                                <div class="box">
+                                                    <div class="wrapper">
+                                                        <div class="container">
+                                                            <div class="box">
+                                                                <div class="wrapper">
+                                                                    <div class="container">
+                                                                        <div class="box">
+                                                                            <main>
+                                                                                <article>
+                                                                                    <h1>Content Hidden in Deep Nesting</h1>
+                                                                                    <div class="wrapper">
+                                                                                        <div class="container">
+                                                                                            <div class="box">
+                                                                                                <p>This paragraph is nested very deep in the DOM tree.</p>
+                                                                                                <div class="wrapper">
+                                                                                                    <div class="container">
+                                                                                                        <div class="box">
+                                                                                                            <h2>Subsection</h2>
+                                                                                                            <div class="wrapper">
+                                                                                                                <div class="container">
+                                                                                                                    <div class="box">
+                                                                                                                        <p>Even deeper content that should still be extracted.</p>
+                                                                                                                        <div class="wrapper">
+                                                                                                                            <div class="container">
+                                                                                                                                <div class="box">
+                                                                                                                                    <ul>
+                                                                                                                                        <li>List item 1</li>
+                                                                                                                                        <li>List item 2</li>
+                                                                                                                                        <li>List item 3</li>
+                                                                                                                                    </ul>
+                                                                                                                                    <div class="wrapper">
+                                                                                                                                        <div class="container">
+                                                                                                                                            <div class="box">
+                                                                                                                                                <p>Ultimate depth content.</p>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </article>
+                                                                            </main>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nested navigation structure -->
+    <nav>
+        <div class="wrapper">
+            <div class="container">
+                <div class="box">
+                    <div class="wrapper">
+                        <div class="container">
+                            <ul>
+                                <li>
+                                    <a href="/">Home</a>
+                                    <ul>
+                                        <li>
+                                            <a href="/sub1">Sub 1</a>
+                                            <ul>
+                                                <li>
+                                                    <a href="/sub1-1">Sub 1-1</a>
+                                                    <ul>
+                                                        <li><a href="/sub1-1-1">Sub 1-1-1</a></li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Nested sidebar -->
+    <aside>
+        <div class="wrapper">
+            <div class="container">
+                <div class="box">
+                    <div class="sidebar-content">
+                        <div class="wrapper">
+                            <div class="container">
+                                <div class="box">
+                                    <p>Sidebar content nested deeply</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Nested footer -->
+    <footer>
+        <div class="wrapper">
+            <div class="container">
+                <div class="box">
+                    <div class="wrapper">
+                        <div class="container">
+                            <p>Copyright 2026</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

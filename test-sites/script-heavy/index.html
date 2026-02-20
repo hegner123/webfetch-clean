@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Script-Heavy Test - webfetch-clean Stress Test</title>
+
+    <!-- Massive amounts of external scripts -->
+    <script src="https://cdn.example.com/jquery.min.js"></script>
+    <script src="https://cdn.example.com/bootstrap.min.js"></script>
+    <script src="https://cdn.example.com/react.js"></script>
+    <script src="https://cdn.example.com/vue.js"></script>
+    <script src="https://cdn.example.com/angular.js"></script>
+    <script src="https://analytics.example.com/tracker.js"></script>
+    <script src="https://ads.example.com/adloader.js"></script>
+    <script src="https://widgets.example.com/social.js"></script>
+    <script src="https://fonts.example.com/loader.js"></script>
+    <script src="https://maps.example.com/api.js"></script>
+
+    <!-- Inline scripts -->
+    <script>
+        // Analytics initialization
+        (function() {
+            var analytics = {
+                track: function(event) {
+                    console.log('Tracking:', event);
+                },
+                init: function() {
+                    this.track('page_view');
+                }
+            };
+            analytics.init();
+        })();
+    </script>
+
+    <script>
+        // Ad configuration
+        window.adConfig = {
+            slots: ['top', 'sidebar', 'middle', 'bottom'],
+            refresh: 30000,
+            targeting: {
+                keywords: ['tech', 'news', 'reviews']
+            }
+        };
+    </script>
+
+    <script>
+        // More tracking
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-XXXXXXX-X');
+    </script>
+
+    <!-- Massive inline styles -->
+    <style>
+        /* Reset styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
+
+        /* Layout */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+        .col-1 { grid-column: span 1; }
+        .col-2 { grid-column: span 2; }
+        .col-3 { grid-column: span 3; }
+        .col-4 { grid-column: span 4; }
+        .col-6 { grid-column: span 6; }
+        .col-12 { grid-column: span 12; }
+
+        /* Typography */
+        h1 { font-size: 2.5rem; line-height: 1.2; margin-bottom: 1rem; }
+        h2 { font-size: 2rem; line-height: 1.3; margin-bottom: 0.8rem; }
+        h3 { font-size: 1.5rem; line-height: 1.4; margin-bottom: 0.6rem; }
+        p { line-height: 1.6; margin-bottom: 1rem; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        /* Components */
+        .btn { display: inline-block; padding: 10px 20px; border-radius: 4px; cursor: pointer; transition: all 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+
+    <!-- External stylesheets -->
+    <link rel="stylesheet" href="https://cdn.example.com/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.example.com/font-awesome.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+
+    <!-- More inline styles -->
+    <style>
+        /* Utility classes */
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 1rem; }
+        .mt-4 { margin-top: 1.5rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <!-- Inline script in body -->
+    <script>
+        console.log('Body loaded');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM ready');
+        });
+    </script>
+
+    <main>
+        <article>
+            <h1>Script-Heavy Test Page</h1>
+
+            <p>This is actual content that should be preserved despite the heavy script and style overhead.</p>
+
+            <!-- Inline script in middle of content -->
+            <script>
+                // User interaction tracking
+                var clicks = 0;
+                document.addEventListener('click', function() {
+                    clicks++;
+                    console.log('Click count:', clicks);
+                });
+            </script>
+
+            <h2>Important Information</h2>
+            <p>This paragraph contains valuable information that readers want to see.</p>
+
+            <!-- Another inline script -->
+            <script>
+                // Form validation
+                function validateForm(form) {
+                    var isValid = true;
+                    var inputs = form.querySelectorAll('input[required]');
+                    inputs.forEach(function(input) {
+                        if (!input.value) {
+                            isValid = false;
+                            input.classList.add('error');
+                        }
+                    });
+                    return isValid;
+                }
+            </script>
+
+            <h2>Key Points</h2>
+            <ul>
+                <li>First important point</li>
+                <li>Second important point</li>
+                <li>Third important point</li>
+            </ul>
+
+            <!-- More inline scripts -->
+            <script>
+                // Social media integration
+                window.socialShare = function(platform, url) {
+                    var urls = {
+                        facebook: 'https://facebook.com/sharer.php?u=' + url,
+                        twitter: 'https://twitter.com/intent/tweet?url=' + url,
+                        linkedin: 'https://linkedin.com/shareArticle?url=' + url
+                    };
+                    window.open(urls[platform], '_blank', 'width=600,height=400');
+                };
+            </script>
+
+            <p>Conclusion paragraph with final thoughts on the topic.</p>
+        </article>
+    </main>
+
+    <!-- Deferred scripts -->
+    <script defer src="https://cdn.example.com/comments-widget.js"></script>
+    <script defer src="https://cdn.example.com/related-articles.js"></script>
+    <script defer src="https://cdn.example.com/email-subscription.js"></script>
+
+    <!-- Async scripts -->
+    <script async src="https://cdn.example.com/lazy-load.js"></script>
+    <script async src="https://cdn.example.com/image-gallery.js"></script>
+    <script async src="https://cdn.example.com/video-player.js"></script>
+
+    <!-- Footer scripts -->
+    <script>
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            var timing = performance.timing;
+            var loadTime = timing.loadEventEnd - timing.navigationStart;
+            console.log('Page load time:', loadTime, 'ms');
+        });
+    </script>
+
+    <script>
+        // Cookie consent
+        (function() {
+            if (!localStorage.getItem('cookieConsent')) {
+                var banner = document.createElement('div');
+                banner.innerHTML = '<p>We use cookies</p><button>Accept</button>';
+                document.body.appendChild(banner);
+            }
+        })();
+    </script>
+
+    <!-- Final tracking script -->
+    <script>
+        // Session tracking
+        sessionStorage.setItem('sessionId', Math.random().toString(36).substring(7));
+        sessionStorage.setItem('visitTime', new Date().toISOString());
+    </script>
+</body>
+</html>

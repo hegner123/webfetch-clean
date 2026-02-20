@@ -43,6 +43,8 @@ type Config struct {
 	Format          string
 	PreserveMain    bool
 	RemoveImages    bool
+	StripLinks      bool
+	UseBrowser      bool
 	Timeout         int
 	OutputFile      string
 	OutputDirectory string
@@ -182,6 +184,9 @@ EXAMPLES:
   # Keep only main content, remove images
   webfetch-clean --cli --url https://example.com --preserve-main --remove-images
 
+  # Use headless browser for JavaScript-rendered pages
+  webfetch-clean --cli --url https://spa-example.com --browser
+
   # Run as MCP server (default)
   webfetch-clean
 `)
@@ -199,6 +204,8 @@ func parseFlags() Config {
 	flag.StringVar(&config.Format, "format", "markdown", "Output format: html or markdown (CLI mode only)")
 	flag.BoolVar(&config.PreserveMain, "preserve-main", false, "Only preserve <main>/<article> content (CLI mode only)")
 	flag.BoolVar(&config.RemoveImages, "remove-images", false, "Remove all images (CLI mode only)")
+	flag.BoolVar(&config.StripLinks, "strip-links", false, "Replace links with their text content (CLI mode only)")
+	flag.BoolVar(&config.UseBrowser, "browser", false, "Use headless browser for JavaScript-rendered pages (CLI mode only)")
 	flag.IntVar(&config.Timeout, "timeout", 30, "HTTP timeout in seconds (CLI mode only)")
 	flag.StringVar(&config.OutputFile, "output", "", "Write output to file (default: stdout, CLI mode only)")
 	flag.BoolVar(&config.Verbose, "verbose", false, "Print verbose progress messages to stderr (CLI mode only)")
@@ -220,6 +227,11 @@ func runCLI(config Config) {
 		os.Exit(ExitInvalidArgs)
 	}
 
+	if config.UseBrowser && config.File != "" {
+		fmt.Fprintln(os.Stderr, "Error: --browser cannot be used with --file")
+		os.Exit(ExitInvalidArgs)
+	}
+
 	if config.Format != "html" && config.Format != "markdown" {
 		fmt.Fprintln(os.Stderr, "Error: --format must be 'html' or 'markdown'")
 		os.Exit(ExitInvalidArgs)
@@ -229,6 +241,9 @@ func runCLI(config Config) {
 		if config.URL != "" {
 			fmt.Fprintf(os.Stderr, "[verbose] Fetching URL: %s\n", config.URL)
 			fmt.Fprintf(os.Stderr, "[verbose] Timeout: %d seconds\n", config.Timeout)
+			if config.UseBrowser {
+				fmt.Fprintln(os.Stderr, "[verbose] Using headless browser (Chromium) for JS-rendered content")
+			}
 		} else {
 			fmt.Fprintf(os.Stderr, "[verbose] Reading file: %s\n", config.File)
 		}
@@ -238,6 +253,9 @@ func runCLI(config Config) {
 		}
 		if config.RemoveImages {
 			fmt.Fprintln(os.Stderr, "[verbose] Removing images")
+		}
+		if config.StripLinks {
+			fmt.Fprintln(os.Stderr, "[verbose] Stripping links")
 		}
 	}
 
@@ -356,13 +374,17 @@ func handleToolsList(req JSONRPCRequest) {
 		Tools: []Tool{
 			{
 				Name:        "webfetch_clean",
-				Description: "Fetch a URL, clean HTML by removing ads/scripts/styles/navigation, and convert to markdown or cleaned HTML",
+				Description: "Fetch a URL or read a local file, clean HTML by removing ads/scripts/styles/navigation, and convert to markdown or cleaned HTML",
 				InputSchema: InputSchema{
 					Type: "object",
 					Properties: map[string]Property{
 						"url": {
 							Type:        "string",
-							Description: "URL to fetch and clean (required)",
+							Description: "URL to fetch and clean (provide url or file, not both)",
+						},
+						"file": {
+							Type:        "string",
+							Description: "Local file path to read and clean (provide url or file, not both)",
 						},
 						"output_format": {
 							Type:        "string",
@@ -378,6 +400,16 @@ func handleToolsList(req JSONRPCRequest) {
 						"remove_images": {
 							Type:        "boolean",
 							Description: "Remove all images from output (default: false)",
+							Default:     false,
+						},
+						"strip_links": {
+							Type:        "boolean",
+							Description: "Replace links with their text content (default: false)",
+							Default:     false,
+						},
+						"use_browser": {
+							Type:        "boolean",
+							Description: "Use headless browser (Chromium) for JavaScript-rendered pages. Only valid with 'url'. Slower but handles SPAs.",
 							Default:     false,
 						},
 						"timeout": {
@@ -396,7 +428,7 @@ func handleToolsList(req JSONRPCRequest) {
 							Default:     100000,
 						},
 					},
-					Required: []string{"url"},
+					Required: []string{},
 				},
 			},
 		},
@@ -416,14 +448,21 @@ func handleToolsCall(req JSONRPCRequest) {
 		return
 	}
 
-	url, ok := params.Arguments["url"].(string)
-	if !ok || url == "" {
-		sendError(req.ID, ErrInvalidParams, "Missing or invalid 'url' parameter")
+	url, _ := params.Arguments["url"].(string)
+	file, _ := params.Arguments["file"].(string)
+
+	if url != "" && file != "" {
+		sendError(req.ID, ErrInvalidParams, "Cannot specify both 'url' and 'file' parameters")
+		return
+	}
+	if url == "" && file == "" {
+		sendError(req.ID, ErrInvalidParams, "Must provide either 'url' or 'file' parameter")
 		return
 	}
 
 	config := Config{
 		URL:       url,
+		File:      file,
 		Format:    "markdown",
 		Timeout:   30,
 		MaxTokens: 100000,
@@ -439,6 +478,19 @@ func handleToolsCall(req JSONRPCRequest) {
 
 	if removeImages, ok := params.Arguments["remove_images"].(bool); ok {
 		config.RemoveImages = removeImages
+	}
+
+	if stripLinks, ok := params.Arguments["strip_links"].(bool); ok {
+		config.StripLinks = stripLinks
+	}
+
+	if useBrowser, ok := params.Arguments["use_browser"].(bool); ok {
+		config.UseBrowser = useBrowser
+	}
+
+	if config.UseBrowser && config.File != "" {
+		sendError(req.ID, ErrInvalidParams, "Cannot use 'use_browser' with 'file' parameter")
+		return
 	}
 
 	if timeout, ok := params.Arguments["timeout"].(float64); ok {
@@ -485,10 +537,15 @@ func processInput(config Config) CleanResult {
 	// Step 1: Get HTML from URL or file
 	if config.File != "" {
 		html, err = ReadFile(config.File)
+	} else if config.UseBrowser {
+		var finalURL string
+		html, finalURL, err = FetchBrowser(context.Background(), config.URL, config.Timeout)
+		if finalURL != "" {
+			result.URL = finalURL
+		}
 	} else {
 		var finalURL string
 		html, finalURL, err = FetchURL(context.Background(), config.URL, config.Timeout)
-		// Update result URL to final URL after redirects
 		if finalURL != "" {
 			result.URL = finalURL
 		}
@@ -499,7 +556,7 @@ func processInput(config Config) CleanResult {
 	}
 
 	// Step 2: Clean the HTML
-	cleanedHTML, err := CleanHTML(html, config.PreserveMain, config.RemoveImages)
+	cleanedHTML, err := CleanHTML(html, config.PreserveMain, config.RemoveImages, config.StripLinks)
 	if err != nil {
 		result.Error = err.Error()
 		return result
