@@ -41,6 +41,7 @@ type Config struct {
 	URL             string
 	File            string
 	Format          string
+	Mode            string
 	PreserveMain    bool
 	RemoveImages    bool
 	StripLinks      bool
@@ -204,6 +205,7 @@ func parseFlags() Config {
 	flag.StringVar(&config.Format, "format", "markdown", "Output format: html or markdown (CLI mode only)")
 	flag.BoolVar(&config.PreserveMain, "preserve-main", false, "Only preserve <main>/<article> content (CLI mode only)")
 	flag.BoolVar(&config.RemoveImages, "remove-images", false, "Remove all images (CLI mode only)")
+	flag.StringVar(&config.Mode, "mode", "clean", "Processing mode: clean or scrape (CLI mode only)")
 	flag.BoolVar(&config.StripLinks, "strip-links", false, "Replace links with their text content (CLI mode only)")
 	flag.BoolVar(&config.UseBrowser, "browser", false, "Use headless browser for JavaScript-rendered pages (CLI mode only)")
 	flag.IntVar(&config.Timeout, "timeout", 30, "HTTP timeout in seconds (CLI mode only)")
@@ -237,6 +239,11 @@ func runCLI(config Config) {
 		os.Exit(ExitInvalidArgs)
 	}
 
+	if config.Mode != "clean" && config.Mode != "scrape" {
+		fmt.Fprintln(os.Stderr, "Error: --mode must be 'clean' or 'scrape'")
+		os.Exit(ExitInvalidArgs)
+	}
+
 	if config.Verbose {
 		if config.URL != "" {
 			fmt.Fprintf(os.Stderr, "[verbose] Fetching URL: %s\n", config.URL)
@@ -248,6 +255,7 @@ func runCLI(config Config) {
 			fmt.Fprintf(os.Stderr, "[verbose] Reading file: %s\n", config.File)
 		}
 		fmt.Fprintf(os.Stderr, "[verbose] Output format: %s\n", config.Format)
+		fmt.Fprintf(os.Stderr, "[verbose] Processing mode: %s\n", config.Mode)
 		if config.PreserveMain {
 			fmt.Fprintln(os.Stderr, "[verbose] Preserving main/article content only")
 		}
@@ -392,6 +400,12 @@ func handleToolsList(req JSONRPCRequest) {
 							Enum:        []string{"html", "markdown"},
 							Default:     "markdown",
 						},
+						"mode": {
+							Type:        "string",
+							Description: "Processing mode: 'clean' removes ads/scripts/nav for AI workflows, 'scrape' preserves page structure for HTML ingestion (default: 'clean')",
+							Enum:        []string{"clean", "scrape"},
+							Default:     "clean",
+						},
 						"preserve_main_only": {
 							Type:        "boolean",
 							Description: "Only preserve content inside <main> or <article> tags (default: false)",
@@ -464,12 +478,17 @@ func handleToolsCall(req JSONRPCRequest) {
 		URL:       url,
 		File:      file,
 		Format:    "markdown",
+		Mode:      "clean",
 		Timeout:   30,
 		MaxTokens: 100000,
 	}
 
 	if format, ok := params.Arguments["output_format"].(string); ok {
 		config.Format = format
+	}
+
+	if mode, ok := params.Arguments["mode"].(string); ok {
+		config.Mode = mode
 	}
 
 	if preserveMain, ok := params.Arguments["preserve_main_only"].(bool); ok {
@@ -556,7 +575,7 @@ func processInput(config Config) CleanResult {
 	}
 
 	// Step 2: Clean the HTML
-	cleanedHTML, err := CleanHTML(html, config.PreserveMain, config.RemoveImages, config.StripLinks)
+	cleanedHTML, err := CleanHTML(html, config.PreserveMain, config.RemoveImages, config.StripLinks, config.Mode)
 	if err != nil {
 		result.Error = err.Error()
 		return result

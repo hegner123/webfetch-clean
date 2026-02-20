@@ -13,28 +13,28 @@ import (
 func TestFullPipeline_FetchCleanConvert(t *testing.T) {
 	// Create test server with complex HTML
 	html := `
-	<html>
-		<head>
-			<title>Test Page</title>
-			<script>tracking();</script>
-			<style>.foo { color: red; }</style>
-		</head>
-		<body>
-			<nav>Navigation</nav>
-			<aside class="sidebar">Sidebar content</aside>
-			<div class="advertisement">Ad content</div>
-			<main>
-				<h1>Main Title</h1>
-				<p>This is the main content.</p>
-				<ul>
-					<li>Item 1</li>
-					<li>Item 2</li>
-				</ul>
-			</main>
-			<footer>Footer</footer>
-		</body>
-	</html>
-	`
+    <html>
+        <head>
+            <title>Test Page</title>
+            <script>tracking();</script>
+            <style>.foo { color: red; }</style>
+        </head>
+        <body>
+            <nav>Navigation</nav>
+            <aside class="sidebar">Sidebar content</aside>
+            <div class="advertisement">Ad content</div>
+            <main>
+                <h1>Main Title</h1>
+                <p>This is the main content.</p>
+                <ul>
+                    <li>Item 1</li>
+                    <li>Item 2</li>
+                </ul>
+            </main>
+            <footer>Footer</footer>
+        </body>
+    </html>
+    `
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -49,7 +49,7 @@ func TestFullPipeline_FetchCleanConvert(t *testing.T) {
 	}
 
 	// Step 2: Clean
-	cleaned, err := CleanHTML(fetched, false, false, false)
+	cleaned, err := CleanHTML(fetched, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Clean failed: %v", err)
 	}
@@ -111,19 +111,19 @@ func TestFullPipeline_FetchCleanConvert(t *testing.T) {
 // TestFullPipeline_PreserveMainOnly tests the pipeline with preserveMainOnly option
 func TestFullPipeline_PreserveMainOnly(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<header>Header content</header>
-			<nav>Navigation</nav>
-			<main>
-				<h1>Article Title</h1>
-				<p>Article content</p>
-			</main>
-			<aside>Sidebar</aside>
-			<footer>Footer</footer>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <header>Header content</header>
+            <nav>Navigation</nav>
+            <main>
+                <h1>Article Title</h1>
+                <p>Article content</p>
+            </main>
+            <aside>Sidebar</aside>
+            <footer>Footer</footer>
+        </body>
+    </html>
+    `
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
@@ -137,7 +137,7 @@ func TestFullPipeline_PreserveMainOnly(t *testing.T) {
 	}
 
 	// Clean with preserveMainOnly
-	cleaned, err := CleanHTML(fetched, true, false, false)
+	cleaned, err := CleanHTML(fetched, true, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Clean failed: %v", err)
 	}
@@ -175,15 +175,15 @@ func TestFullPipeline_PreserveMainOnly(t *testing.T) {
 // TestFullPipeline_RemoveImages tests the pipeline with removeImages option
 func TestFullPipeline_RemoveImages(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<h1>Gallery</h1>
-			<img src="photo1.jpg" alt="Photo 1">
-			<p>Description</p>
-			<img src="photo2.jpg" alt="Photo 2">
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <h1>Gallery</h1>
+            <img src="photo1.jpg" alt="Photo 1">
+            <p>Description</p>
+            <img src="photo2.jpg" alt="Photo 2">
+        </body>
+    </html>
+    `
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
@@ -197,7 +197,7 @@ func TestFullPipeline_RemoveImages(t *testing.T) {
 	}
 
 	// Clean with removeImages
-	cleaned, err := CleanHTML(fetched, false, true, false)
+	cleaned, err := CleanHTML(fetched, false, true, false, "clean")
 	if err != nil {
 		t.Fatalf("Clean failed: %v", err)
 	}
@@ -230,14 +230,14 @@ func TestFullPipeline_RemoveImages(t *testing.T) {
 // TestFullPipeline_HTMLOutput tests the pipeline with HTML output format
 func TestFullPipeline_HTMLOutput(t *testing.T) {
 	html := `
-	<html>
-		<head><script>alert('hi');</script></head>
-		<body>
-			<h1>Title</h1>
-			<p>Content</p>
-		</body>
-	</html>
-	`
+    <html>
+        <head><script>alert('hi');</script></head>
+        <body>
+            <h1>Title</h1>
+            <p>Content</p>
+        </body>
+    </html>
+    `
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
@@ -251,7 +251,7 @@ func TestFullPipeline_HTMLOutput(t *testing.T) {
 	}
 
 	// Clean
-	cleaned, err := CleanHTML(fetched, false, false, false)
+	cleaned, err := CleanHTML(fetched, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Clean failed: %v", err)
 	}
@@ -277,97 +277,97 @@ func TestFullPipeline_HTMLOutput(t *testing.T) {
 // TestFullPipeline_ComplexPage tests a realistic complex page
 func TestFullPipeline_ComplexPage(t *testing.T) {
 	html := `
-	<!DOCTYPE html>
-	<html lang="en">
-		<head>
-			<meta charset="UTF-8">
-			<title>Complex Blog Post</title>
-			<script src="analytics.js"></script>
-			<script>trackPageView();</script>
-			<style>
-				body { font-family: Arial; }
-				.ad { background: yellow; }
-			</style>
-			<link rel="stylesheet" href="styles.css">
-		</head>
-		<body>
-			<header class="site-header">
-				<div class="logo">Logo</div>
-				<nav class="main-nav">
-					<a href="/">Home</a>
-					<a href="/about">About</a>
-				</nav>
-			</header>
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>Complex Blog Post</title>
+            <script src="analytics.js"></script>
+            <script>trackPageView();</script>
+            <style>
+                body { font-family: Arial; }
+                .ad { background: yellow; }
+            </style>
+            <link rel="stylesheet" href="styles.css">
+        </head>
+        <body>
+            <header class="site-header">
+                <div class="logo">Logo</div>
+                <nav class="main-nav">
+                    <a href="/">Home</a>
+                    <a href="/about">About</a>
+                </nav>
+            </header>
 
-			<div class="ad-banner">
-				<img src="ad.jpg" alt="Advertisement">
-			</div>
+            <div class="ad-banner">
+                <img src="ad.jpg" alt="Advertisement">
+            </div>
 
-			<aside class="sidebar">
-				<div class="widget">
-					<h3>Recent Posts</h3>
-					<ul>
-						<li><a href="/post1">Post 1</a></li>
-					</ul>
-				</div>
-				<div class="advertisement">
-					<script>showAd();</script>
-				</div>
-			</aside>
+            <aside class="sidebar">
+                <div class="widget">
+                    <h3>Recent Posts</h3>
+                    <ul>
+                        <li><a href="/post1">Post 1</a></li>
+                    </ul>
+                </div>
+                <div class="advertisement">
+                    <script>showAd();</script>
+                </div>
+            </aside>
 
-			<main class="content">
-				<article>
-					<h1>How to Clean HTML</h1>
-					<p class="meta">Posted on January 13, 2026</p>
+            <main class="content">
+                <article>
+                    <h1>How to Clean HTML</h1>
+                    <p class="meta">Posted on January 13, 2026</p>
 
-					<p>This is the main article content. It contains <strong>important information</strong> about cleaning HTML.</p>
+                    <p>This is the main article content. It contains <strong>important information</strong> about cleaning HTML.</p>
 
-					<h2>Why Clean HTML?</h2>
-					<p>Here are the reasons:</p>
-					<ul>
-						<li>Remove clutter</li>
-						<li>Improve readability</li>
-						<li>Better processing</li>
-					</ul>
+                    <h2>Why Clean HTML?</h2>
+                    <p>Here are the reasons:</p>
+                    <ul>
+                        <li>Remove clutter</li>
+                        <li>Improve readability</li>
+                        <li>Better processing</li>
+                    </ul>
 
-					<h2>Code Example</h2>
-					<pre><code>const clean = (html) => {
+                    <h2>Code Example</h2>
+                    <pre><code>const clean = (html) => {
   return html.replace(/<script.*?<\/script>/g, '');
 };</code></pre>
 
-					<p>For more information, visit <a href="https://example.com">our website</a>.</p>
+                    <p>For more information, visit <a href="https://example.com">our website</a>.</p>
 
-					<img src="diagram.png" alt="Diagram showing the process">
-				</article>
-			</main>
+                    <img src="diagram.png" alt="Diagram showing the process">
+                </article>
+            </main>
 
-			<div class="social-share">
-				<button onclick="share()">Share</button>
-			</div>
+            <div class="social-share">
+                <button onclick="share()">Share</button>
+            </div>
 
-			<div class="comments-section">
-				<h3>Comments</h3>
-				<div class="comment">Comment 1</div>
-			</div>
+            <div class="comments-section">
+                <h3>Comments</h3>
+                <div class="comment">Comment 1</div>
+            </div>
 
-			<footer class="site-footer">
-				<p>&copy; 2026 Example Site</p>
-				<div class="footer-links">
-					<a href="/privacy">Privacy</a>
-					<a href="/terms">Terms</a>
-				</div>
-			</footer>
+            <footer class="site-footer">
+                <p>&copy; 2026 Example Site</p>
+                <div class="footer-links">
+                    <a href="/privacy">Privacy</a>
+                    <a href="/terms">Terms</a>
+                </div>
+            </footer>
 
-			<div class="cookie-notice">
-				This site uses cookies.
-			</div>
+            <div class="cookie-notice">
+                This site uses cookies.
+            </div>
 
-			<div class="modal" id="signup-modal">
-				<form>Subscribe to newsletter</form>
-			</div>
-		</body>
-	</html>
-	`
+            <div class="modal" id="signup-modal">
+                <form>Subscribe to newsletter</form>
+            </div>
+        </body>
+    </html>
+    `
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html))
@@ -381,7 +381,7 @@ func TestFullPipeline_ComplexPage(t *testing.T) {
 	}
 
 	// Clean
-	cleaned, err := CleanHTML(fetched, false, false, false)
+	cleaned, err := CleanHTML(fetched, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Clean failed: %v", err)
 	}

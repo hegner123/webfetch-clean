@@ -6,7 +6,7 @@ import (
 )
 
 func TestCleanHTML_EmptyHTML(t *testing.T) {
-	_, err := CleanHTML("", false, false, false)
+	_, err := CleanHTML("", false, false, false, "clean")
 	if err == nil {
 		t.Fatal("Expected error for empty HTML, got nil")
 	}
@@ -18,18 +18,18 @@ func TestCleanHTML_EmptyHTML(t *testing.T) {
 
 func TestCleanHTML_RemoveScriptStyleNav(t *testing.T) {
 	html := `
-	<html>
-		<head><title>Test</title></head>
-		<script>alert('hello');</script>
-		<style>.foo { color: red; }</style>
-		<body>
-			<nav>Navigation</nav>
-			<main>Content</main>
-		</body>
-	</html>
-	`
+    <html>
+        <head><title>Test</title></head>
+        <script>alert('hello');</script>
+        <style>.foo { color: red; }</style>
+        <body>
+            <nav>Navigation</nav>
+            <main>Content</main>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -56,17 +56,17 @@ func TestCleanHTML_RemoveScriptStyleNav(t *testing.T) {
 
 func TestCleanHTML_RemoveAds(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<div class="advertisement">Ad here</div>
-			<div id="ad-banner">Banner ad</div>
-			<div class="ad-container">Another ad</div>
-			<p>Real content</p>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <div class="advertisement">Ad here</div>
+            <div id="ad-banner">Banner ad</div>
+            <div class="ad-container">Another ad</div>
+            <p>Real content</p>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -90,20 +90,20 @@ func TestCleanHTML_RemoveAds(t *testing.T) {
 
 func TestCleanHTML_RemoveClutter(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<aside>Sidebar</aside>
-			<footer>Footer</footer>
-			<div class="sidebar">Side content</div>
-			<div class="popup">Popup</div>
-			<div class="modal">Modal</div>
-			<div class="cookie-notice">Cookie notice</div>
-			<main>Main content</main>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <aside>Sidebar</aside>
+            <footer>Footer</footer>
+            <div class="sidebar">Side content</div>
+            <div class="popup">Popup</div>
+            <div class="modal">Modal</div>
+            <div class="cookie-notice">Cookie notice</div>
+            <main>Main content</main>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -136,15 +136,15 @@ func TestCleanHTML_RemoveClutter(t *testing.T) {
 
 func TestCleanHTML_RemoveIframes(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<iframe src="tracking.html"></iframe>
-			<p>Content</p>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <iframe src="tracking.html"></iframe>
+            <p>Content</p>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -160,16 +160,16 @@ func TestCleanHTML_RemoveIframes(t *testing.T) {
 
 func TestCleanHTML_PreserveMainOnly(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<header>Header</header>
-			<main>Main content</main>
-			<footer>Footer</footer>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <header>Header</header>
+            <main>Main content</main>
+            <footer>Footer</footer>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, true, false, false)
+	cleaned, err := CleanHTML(html, true, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -190,16 +190,16 @@ func TestCleanHTML_PreserveMainOnly(t *testing.T) {
 
 func TestCleanHTML_PreserveArticle(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<header>Header</header>
-			<article>Article content</article>
-			<footer>Footer</footer>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <header>Header</header>
+            <article>Article content</article>
+            <footer>Footer</footer>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, true, false, false)
+	cleaned, err := CleanHTML(html, true, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -220,16 +220,16 @@ func TestCleanHTML_PreserveArticle(t *testing.T) {
 
 func TestCleanHTML_RemoveImages(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<img src="photo.jpg" alt="Photo">
-			<p>Text content</p>
-			<img src="logo.png">
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <img src="photo.jpg" alt="Photo">
+            <p>Text content</p>
+            <img src="logo.png">
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, true, false)
+	cleaned, err := CleanHTML(html, false, true, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -247,15 +247,15 @@ func TestCleanHTML_RemoveImages(t *testing.T) {
 
 func TestCleanHTML_KeepImages(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<img src="photo.jpg" alt="Photo">
-			<p>Text content</p>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <img src="photo.jpg" alt="Photo">
+            <p>Text content</p>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -276,16 +276,16 @@ func TestCleanHTML_KeepImages(t *testing.T) {
 
 func TestCleanHTML_StripAttributes(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<div class="container" id="main" style="color: red;" data-foo="bar">
-				<a href="https://example.com" class="link" onclick="alert()">Link</a>
-			</div>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <div class="container" id="main" style="color: red;" data-foo="bar">
+                <a href="https://example.com" class="link" onclick="alert()">Link</a>
+            </div>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -320,21 +320,21 @@ func TestCleanHTML_StripAttributes(t *testing.T) {
 
 func TestCleanHTML_PreserveSemanticElements(t *testing.T) {
 	html := `
-	<html>
-		<body>
-			<h1>Heading 1</h1>
-			<h2>Heading 2</h2>
-			<p>Paragraph</p>
-			<ul><li>List item</li></ul>
-			<ol><li>Ordered item</li></ol>
-			<code>code</code>
-			<pre>preformatted</pre>
-			<table><tr><td>Cell</td></tr></table>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <h1>Heading 1</h1>
+            <h2>Heading 2</h2>
+            <p>Paragraph</p>
+            <ul><li>List item</li></ul>
+            <ol><li>Ordered item</li></ol>
+            <code>code</code>
+            <pre>preformatted</pre>
+            <table><tr><td>Cell</td></tr></table>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -365,16 +365,16 @@ func TestCleanHTML_AdDetectionLimitations(t *testing.T) {
 	// 2. Most legitimate content doesn't have "ad" surrounded by dashes
 	// 3. The main semantic content is usually not affected
 	html := `
-	<html>
-		<body>
-			<div class="advertisement">Real ad</div>
-			<div class="ad-banner">Banner ad</div>
-			<div class="content">Main content</div>
-		</body>
-	</html>
-	`
+    <html>
+        <body>
+            <div class="advertisement">Real ad</div>
+            <div class="ad-banner">Banner ad</div>
+            <div class="content">Main content</div>
+        </body>
+    </html>
+    `
 
-	cleaned, err := CleanHTML(html, false, false, false)
+	cleaned, err := CleanHTML(html, false, false, false, "clean")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -390,5 +390,167 @@ func TestCleanHTML_AdDetectionLimitations(t *testing.T) {
 	// Verify main content is preserved
 	if !strings.Contains(cleaned, "Main content") {
 		t.Error("Expected main content to be preserved")
+	}
+}
+
+func TestCleanHTML_ScrapeMode_PreservesStructure(t *testing.T) {
+	html := `
+    <html>
+        <head><title>Test</title><meta charset="UTF-8"></head>
+        <body>
+            <script>tracking();</script>
+            <style>.foo { color: red; }</style>
+            <nav>Navigation</nav>
+            <aside class="sidebar">Sidebar</aside>
+            <div class="advertisement">Ad content</div>
+            <iframe src="embed.html"></iframe>
+            <footer>Footer content</footer>
+            <div class="cookie-notice">Cookies</div>
+            <div class="modal" id="signup">Modal</div>
+            <main>
+                <h1>Title</h1>
+                <p class="intro" data-section="1">Content</p>
+            </main>
+        </body>
+    </html>
+    `
+
+	cleaned, err := CleanHTML(html, false, false, false, "scrape")
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	// Scrape mode should preserve everything except <head>
+	if strings.Contains(cleaned, "<head") {
+		t.Error("Expected <head> to be removed in scrape mode")
+	}
+	if strings.Contains(cleaned, "<title") {
+		t.Error("Expected <title> (inside head) to be removed in scrape mode")
+	}
+
+	// Scripts, styles, nav, footer, ads, iframes, sidebars, modals, cookies should all be preserved
+	preserved := []string{
+		"<script", "<style", "<nav", "Navigation",
+		"Sidebar", "Ad content", "<iframe", "Footer content",
+		"Cookies", "Modal",
+	}
+	for _, item := range preserved {
+		if !strings.Contains(cleaned, item) {
+			t.Errorf("Expected '%s' to be preserved in scrape mode", item)
+		}
+	}
+
+	// Attributes should be preserved in scrape mode
+	if !strings.Contains(cleaned, `class="intro"`) {
+		t.Error("Expected class attribute to be preserved in scrape mode")
+	}
+	if !strings.Contains(cleaned, `data-section="1"`) {
+		t.Error("Expected data attribute to be preserved in scrape mode")
+	}
+
+	// Main content should still be there
+	if !strings.Contains(cleaned, "Title") {
+		t.Error("Expected main content to be preserved")
+	}
+	if !strings.Contains(cleaned, "Content") {
+		t.Error("Expected paragraph content to be preserved")
+	}
+}
+
+func TestCleanHTML_ScrapeMode_RemoveImages(t *testing.T) {
+	html := `
+    <html>
+        <body>
+            <img src="photo.jpg" alt="Photo">
+            <p>Text content</p>
+        </body>
+    </html>
+    `
+
+	cleaned, err := CleanHTML(html, false, true, false, "scrape")
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if strings.Contains(cleaned, "<img") {
+		t.Error("Expected images to be removed even in scrape mode when removeImages=true")
+	}
+	if !strings.Contains(cleaned, "Text content") {
+		t.Error("Expected text content to be preserved")
+	}
+}
+
+func TestCleanHTML_ScrapeMode_StripLinks(t *testing.T) {
+	html := `
+    <html>
+        <body>
+            <a href="https://example.com" class="link">Click here</a>
+            <p>Paragraph</p>
+        </body>
+    </html>
+    `
+
+	cleaned, err := CleanHTML(html, false, false, true, "scrape")
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if strings.Contains(cleaned, "<a ") {
+		t.Error("Expected links to be stripped even in scrape mode when stripLinks=true")
+	}
+	if !strings.Contains(cleaned, "Click here") {
+		t.Error("Expected link text to be preserved")
+	}
+}
+
+func TestCleanHTML_ScrapeMode_PreserveMainOnly(t *testing.T) {
+	html := `
+    <html>
+        <body>
+            <header>Header</header>
+            <main><h1>Main content</h1></main>
+            <footer>Footer</footer>
+        </body>
+    </html>
+    `
+
+	cleaned, err := CleanHTML(html, true, false, false, "scrape")
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if !strings.Contains(cleaned, "Main content") {
+		t.Error("Expected main content to be preserved")
+	}
+	if strings.Contains(cleaned, "Header") {
+		t.Error("Expected header to be removed when preserveMainOnly=true in scrape mode")
+	}
+}
+
+func TestCleanHTML_DefaultModeIsClean(t *testing.T) {
+	html := `
+    <html>
+        <body>
+            <script>alert('hi');</script>
+            <nav>Navigation</nav>
+            <p>Content</p>
+        </body>
+    </html>
+    `
+
+	// Empty mode should default to clean
+	cleaned, err := CleanHTML(html, false, false, false, "")
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if strings.Contains(cleaned, "<script") {
+		t.Error("Expected scripts to be removed with default (clean) mode")
+	}
+	if strings.Contains(cleaned, "<nav") {
+		t.Error("Expected nav to be removed with default (clean) mode")
+	}
+	if !strings.Contains(cleaned, "Content") {
+		t.Error("Expected content to be preserved")
 	}
 }
