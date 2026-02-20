@@ -1,0 +1,50 @@
+services:
+  webfetch:
+    build: .
+    command:
+      - "--http"
+      - "0.0.0.0:8080"
+      - "--api-key"
+      - "${WEBFETCH_API_KEY}"
+      - "--base-url"
+      - "${BASE_URL}"
+      - "--db"
+      - "/data/db/webfetch.db"
+    volumes:
+      - webfetch-data:/data
+    shm_size: 2g
+    restart: unless-stopped
+    networks:
+      - internal
+      - external
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - internal
+    depends_on:
+      webfetch:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  webfetch-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:
+  external:

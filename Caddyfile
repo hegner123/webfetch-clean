@@ -1,0 +1,7 @@
+{$SITE_ADDRESS:localhost} {
+	reverse_proxy webfetch:8080
+
+	request_body {
+		max_size 10MB
+	}
+}
