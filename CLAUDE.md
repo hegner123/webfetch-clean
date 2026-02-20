@@ -10,6 +10,10 @@ webfetch-clean is a high-performance MCP tool that fetches web pages, removes cl
 - **MCP Server Mode (default)**: JSON-RPC 2.0 protocol for Claude Code integration
 - **CLI Mode**: Command-line tool with `--cli` flag
 
+**Processing Modes:**
+- **Clean mode (default)**: Aggressively strips ads, scripts, styles, nav, footer, sidebars, and non-semantic attributes for AI token efficiency
+- **Scrape mode**: Light processing — only removes `<head>`, preserving page structure (scripts, styles, nav, footer, ads, iframes, attributes) for HTML ingestion workflows
+
 ## Development Commands
 
 ### Build and Install
@@ -77,6 +81,9 @@ echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | webfetch-clean
 
 # Call tool
 echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"webfetch_clean","arguments":{"url":"https://example.com"}}}' | webfetch-clean
+
+# Call tool in scrape mode
+echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"webfetch_clean","arguments":{"url":"https://example.com","mode":"scrape"}}}' | webfetch-clean
 ```
 
 ### CLI Testing
@@ -100,6 +107,12 @@ webfetch-clean --cli --url https://example.com --remove-images
 
 # Custom timeout
 webfetch-clean --cli --url https://example.com --timeout 60
+
+# Scrape mode — preserves page structure (scripts, styles, nav, footer, etc.)
+webfetch-clean --cli --url https://example.com --mode scrape
+
+# Scrape mode with HTML output
+webfetch-clean --cli --url https://example.com --mode scrape --format html
 ```
 
 **Test CLI mode with local file:**
@@ -158,13 +171,16 @@ Both sources feed into the same cleaning and conversion pipeline.
 - Error wrapping with context
 
 **cleaner.go** - Multi-pass HTML cleaning pipeline
-- `CleanHTML(html, preserveMainOnly, removeImages)` - Main cleaning function
-- Pass 1: Remove `<head>`, `<script>`, `<style>`, `<nav>`
-- Pass 2: Remove ad-related elements (class/id patterns)
-- Pass 3: Remove tracking iframes
-- Pass 4: Remove clutter (footer, aside, sidebar, menu, popup, modal, cookie, social, comments)
-- Pass 5: Strip inline attributes (keeps only href, src, alt, title)
-- Pass 6: Remove images if requested
+- `CleanHTML(html, preserveMainOnly, removeImages, stripLinks, mode)` - Main cleaning function
+- `mode` parameter: `"clean"` (default) or `"scrape"`
+- **Clean mode** runs all passes:
+  - Pass 1: Remove `<head>`, `<script>`, `<style>`, `<nav>`
+  - Pass 2: Remove ad-related elements (class/id patterns)
+  - Pass 3: Remove tracking iframes
+  - Pass 4: Remove clutter (footer, aside, sidebar, menu, popup, modal, cookie, social, comments)
+  - Pass 5: Strip inline attributes (keeps only href, src, alt, title)
+- **Scrape mode** only removes `<head>`, preserves everything else
+- `removeImages`, `stripLinks`, and `preserveMainOnly` apply in both modes
 - Preserves semantic elements: `<main>`, `<article>`, `<p>`, `<h1-h6>`, `<ul>`, `<ol>`, `<code>`, `<pre>`, `<table>`, `<a>`, `<img>`, `<blockquote>`
 
 **converter.go** - HTML-to-Markdown conversion
@@ -269,7 +285,7 @@ func TestCleanHTML(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            got, err := CleanHTML(tt.input, false, false)
+            got, err := CleanHTML(tt.input, false, false, false, "clean")
             if (err != nil) != tt.wantErr {
                 t.Errorf("CleanHTML() error = %v, wantErr %v", err, tt.wantErr)
                 return
@@ -331,6 +347,7 @@ This is acceptable because:
 1. Better to be overly aggressive in removing ads
 2. Most legitimate content doesn't have "ad" surrounded by dashes
 3. Main semantic content is usually not affected
+4. Scrape mode (`--mode scrape`) bypasses all ad detection, preserving everything
 
 ## CI/CD
 
