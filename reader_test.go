@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -86,9 +87,8 @@ func TestReadFile_Directory(t *testing.T) {
 }
 
 func TestReadFile_PermissionDenied(t *testing.T) {
-	// Skip on Windows as chmod behaves differently
-	if os.Getenv("GOOS") == "windows" {
-		t.Skip("Skipping permission test on Windows")
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping permission test on Windows: chmod does not remove read access")
 	}
 
 	tmpfile, err := os.CreateTemp("", "noperm*.html")
