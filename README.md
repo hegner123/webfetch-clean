@@ -22,11 +22,46 @@ When using Claude's built-in WebFetch tool, you pay for the **entire raw HTML** 
 
 ## Installation
 
-### Prerequisites
+### Download from Release
 
-- Go 1.23 or later
+Download a pre-built binary from [GitHub Releases](https://github.com/hegner123/webfetch-clean/releases/latest):
+
+**macOS:**
+```bash
+# Apple Silicon (M1/M2/M3/M4)
+curl -L https://github.com/hegner123/webfetch-clean/releases/latest/download/webfetch-clean-darwin-arm64 -o webfetch-clean
+
+# Intel
+curl -L https://github.com/hegner123/webfetch-clean/releases/latest/download/webfetch-clean-darwin-amd64 -o webfetch-clean
+
+chmod +x webfetch-clean
+sudo mv webfetch-clean /usr/local/bin/
+```
+
+**Linux:**
+```bash
+# x86_64
+curl -L https://github.com/hegner123/webfetch-clean/releases/latest/download/webfetch-clean-linux-amd64 -o webfetch-clean
+
+# ARM64
+curl -L https://github.com/hegner123/webfetch-clean/releases/latest/download/webfetch-clean-linux-arm64 -o webfetch-clean
+
+chmod +x webfetch-clean
+sudo mv webfetch-clean /usr/local/bin/
+```
+
+**Windows (PowerShell):**
+```powershell
+# x86_64
+Invoke-WebRequest -Uri https://github.com/hegner123/webfetch-clean/releases/latest/download/webfetch-clean-windows-amd64.exe -OutFile webfetch-clean.exe
+
+# ARM64
+Invoke-WebRequest -Uri https://github.com/hegner123/webfetch-clean/releases/latest/download/webfetch-clean-windows-arm64.exe -OutFile webfetch-clean.exe
+```
 
 ### Build from Source
+
+Requires Go 1.23 or later.
 
 ```bash
 git clone https://github.com/hegner123/webfetch-clean.git
@@ -34,6 +69,26 @@ cd webfetch-clean
 go build -o webfetch-clean
 sudo cp webfetch-clean /usr/local/bin/
 ```
+
+### Add to Claude Code
+
+After building, register the MCP server with Claude Code:
+
+```bash
+# If installed to /usr/local/bin (in PATH)
+claude mcp add --scope user --transport stdio webfetch-clean -- webfetch-clean
+
+# If using absolute path (not in PATH)
+claude mcp add --scope user --transport stdio webfetch-clean -- $HOME/path/to/webfetch-clean
+```
+
+Verify it's registered:
+
+```bash
+claude mcp list
+```
+
+Then inside a Claude Code session, run `/mcp` to confirm the server is connected.
 
 ### Verify Installation
 
