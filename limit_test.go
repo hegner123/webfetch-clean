@@ -160,36 +160,26 @@ func TestProcessInput_OutputLimit_Exceeded(t *testing.T) {
 		t.Errorf("processInput() error = %v, want nil", result.Error)
 	}
 
-	// Content should contain message about file
-	if !strings.Contains(result.Content, "Output exceeded limit") {
-		t.Error("processInput() should indicate output exceeded limit")
+	// processInput should signal over-limit without doing I/O
+	if !result.OverLimit {
+		t.Error("processInput() should set OverLimit = true when content exceeds limit")
 	}
 
-	if !strings.Contains(result.Content, "Content written to file:") {
-		t.Error("processInput() should indicate file was written")
+	if result.TokenCount <= 0 {
+		t.Error("processInput() should set TokenCount > 0 when over limit")
 	}
 
-	// Extract filename from message
-	var filename string
-	parts := strings.Split(result.Content, "Content written to file: ")
-	if len(parts) == 2 {
-		filename = strings.TrimSpace(parts[1])
+	if result.RawContent == "" {
+		t.Error("processInput() should set RawContent when over limit")
 	}
 
-	if filename == "" {
-		t.Fatal("Failed to extract filename from result")
+	if !strings.Contains(result.RawContent, "very long paragraph") {
+		t.Error("processInput() RawContent should contain the cleaned content")
 	}
 
-	// Verify file was created
-	defer os.Remove(filename)
-	fileContent, err := os.ReadFile(filename)
-	if err != nil {
-		t.Errorf("Expected file %s to be created, but got error: %v", filename, err)
-	}
-
-	// Verify file contains the cleaned content
-	if !strings.Contains(string(fileContent), "very long paragraph") {
-		t.Error("Output file should contain cleaned content")
+	// Content should be empty — callers handle file-write
+	if result.Content != "" {
+		t.Errorf("processInput() Content should be empty when over limit, got: %s", result.Content)
 	}
 }
 
@@ -224,16 +214,12 @@ func TestProcessInput_OutputLimit_URLFilename(t *testing.T) {
 		t.Errorf("processInput() error = %v, want nil", result.Error)
 	}
 
-	// Extract filename
-	parts := strings.Split(result.Content, "Content written to file: ")
-	if len(parts) != 2 {
-		t.Fatal("Expected filename in result")
+	// processInput should signal over-limit
+	if !result.OverLimit {
+		t.Error("processInput() should set OverLimit = true")
 	}
-	filename := strings.TrimSpace(parts[1])
-	defer os.Remove(filename)
 
-	// Verify filename format
-	if !strings.HasSuffix(filename, "-cleaned.md") {
-		t.Errorf("Filename should end with -cleaned.md, got: %s", filename)
+	if result.RawContent == "" {
+		t.Error("processInput() should set RawContent when over limit")
 	}
 }

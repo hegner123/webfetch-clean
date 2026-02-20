@@ -42,8 +42,16 @@ test-sites/test-results/
 *-cleaned.html
 example-com.md
 
+# SQLite databases
+*.db
+*.db-wal
+*.db-shm
+
 # Local config
 .claude/
+
+# Environment secrets
+.env
 
 # OS
 .DS_Store

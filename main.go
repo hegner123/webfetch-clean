@@ -53,15 +53,22 @@ type Config struct {
 	CLIMode         bool
 	ShowVersion     bool
 	Verbose         bool
+	HTTPAddr        string
+	APIKey          string
+	BaseURL         string
+	DBPath          string
 }
 
 // CleanResult represents the result of cleaning a URL
 type CleanResult struct {
-	Content string `json:"content"`
-	URL     string `json:"url"`
-	Title   string `json:"title,omitempty"`
-	Format  string `json:"format"`
-	Error   string `json:"error,omitempty"`
+	Content    string `json:"content"`
+	URL        string `json:"url"`
+	Title      string `json:"title,omitempty"`
+	Format     string `json:"format"`
+	Error      string `json:"error,omitempty"`
+	TokenCount int    `json:"token_count,omitempty"`
+	OverLimit  bool   `json:"-"`
+	RawContent string `json:"-"`
 }
 
 // MCP JSON-RPC types
@@ -144,6 +151,11 @@ func main() {
 		return
 	}
 
+	if config.HTTPAddr != "" {
+		runHTTPServer(config)
+		return
+	}
+
 	if config.CLIMode {
 		runCLI(config)
 		return
@@ -171,6 +183,10 @@ CLI MODE:
   webfetch-clean --cli --url https://example.com --format html
   webfetch-clean --cli --url https://example.com --output result.md
 
+HTTP MODE:
+  webfetch-clean --http :8080 --api-key SECRET --base-url http://localhost:8080
+  Endpoints: POST /mcp, GET /results/{id}, POST /admin/tokens, GET /health
+
 OPTIONS:
 `)
 	flag.PrintDefaults()
@@ -187,6 +203,9 @@ EXAMPLES:
 
   # Use headless browser for JavaScript-rendered pages
   webfetch-clean --cli --url https://spa-example.com --browser
+
+  # Run as HTTP server with API key auth
+  webfetch-clean --http :8080 --api-key my-secret --base-url http://localhost:8080
 
   # Run as MCP server (default)
   webfetch-clean
@@ -211,6 +230,12 @@ func parseFlags() Config {
 	flag.IntVar(&config.Timeout, "timeout", 30, "HTTP timeout in seconds (CLI mode only)")
 	flag.StringVar(&config.OutputFile, "output", "", "Write output to file (default: stdout, CLI mode only)")
 	flag.BoolVar(&config.Verbose, "verbose", false, "Print verbose progress messages to stderr (CLI mode only)")
+
+	// HTTP server mode flags
+	flag.StringVar(&config.HTTPAddr, "http", "", "Start HTTP server on address (e.g., :8080)")
+	flag.StringVar(&config.APIKey, "api-key", "", "API key for HTTP mode (or WEBFETCH_API_KEY env)")
+	flag.StringVar(&config.BaseURL, "base-url", "", "Public base URL for download links (e.g., https://fetch.example.com)")
+	flag.StringVar(&config.DBPath, "db", "webfetch.db", "SQLite database path for file tokens (HTTP mode)")
 
 	flag.Parse()
 
@@ -272,6 +297,26 @@ func runCLI(config Config) {
 	if result.Error != "" {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", result.Error)
 		os.Exit(ExitProcessError)
+	}
+
+	if result.OverLimit {
+		filename := GenerateOutputFilename(config.URL, config.File, config.Format)
+		if config.OutputDirectory != "" {
+			filename = filepath.Join(config.OutputDirectory, filename)
+		}
+		filename, err := GenerateUniqueFilename(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating unique filename: %v\n", err)
+			os.Exit(ExitFileWriteError)
+		}
+		err = SafeWriteFile(filename, []byte(result.RawContent), 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+			os.Exit(ExitFileWriteError)
+		}
+		result.Content = fmt.Sprintf("Output exceeded limit (%d tokens, limit: %d tokens). Content written to file: %s",
+			result.TokenCount, config.MaxTokens, filename)
+		result.RawContent = ""
 	}
 
 	output := result.Content
@@ -526,6 +571,26 @@ func handleToolsCall(req JSONRPCRequest) {
 
 	result := processInput(config)
 
+	if result.OverLimit {
+		filename := GenerateOutputFilename(config.URL, config.File, config.Format)
+		if config.OutputDirectory != "" {
+			filename = filepath.Join(config.OutputDirectory, filename)
+		}
+		filename, err := GenerateUniqueFilename(filename)
+		if err != nil {
+			sendError(req.ID, ErrInternal, fmt.Sprintf("failed to generate unique filename: %v", err))
+			return
+		}
+		err = SafeWriteFile(filename, []byte(result.RawContent), 0644)
+		if err != nil {
+			sendError(req.ID, ErrInternal, fmt.Sprintf("failed to write output file: %v", err))
+			return
+		}
+		result.Content = fmt.Sprintf("Output exceeded limit (%d tokens, limit: %d tokens). Content written to file: %s",
+			result.TokenCount, config.MaxTokens, filename)
+		result.RawContent = ""
+	}
+
 	jsonResult, err := json.Marshal(result)
 	if err != nil {
 		sendError(req.ID, ErrInternal, "Failed to marshal result")
@@ -588,23 +653,13 @@ func processInput(config Config) CleanResult {
 		return result
 	}
 
-	// Step 4: Check token limit and write to file if exceeded
+	// Step 4: Check token limit — signal over-limit to caller, no I/O here
 	// Token calculation: 3 bytes = 1 token
 	tokenCount := len(output) / 3
 	if config.MaxTokens > 0 && tokenCount > config.MaxTokens {
-		filename := GenerateOutputFilename(config.URL, config.File, config.Format)
-		if config.OutputDirectory != "" {
-			filename = filepath.Join(config.OutputDirectory, filename)
-		}
-
-		err := SafeWriteFile(filename, []byte(output), 0644)
-		if err != nil {
-			result.Error = fmt.Sprintf("failed to write output file: %v", err)
-			return result
-		}
-
-		result.Content = fmt.Sprintf("Output exceeded limit (%d tokens, limit: %d tokens). Content written to file: %s",
-			tokenCount, config.MaxTokens, filename)
+		result.OverLimit = true
+		result.TokenCount = tokenCount
+		result.RawContent = output
 		return result
 	}
 

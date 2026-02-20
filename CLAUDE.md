@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 webfetch-clean is a high-performance MCP tool that fetches web pages, removes clutter (ads, scripts, navigation), and outputs clean HTML or Markdown. It provides 90-96% token cost savings compared to Claude's built-in WebFetch tool by processing HTML locally rather than sending raw HTML through the API.
 
-**Dual-Mode Operation:**
-- **MCP Server Mode (default)**: JSON-RPC 2.0 protocol for Claude Code integration
+**Triple-Mode Operation:**
+- **MCP Server Mode (default)**: JSON-RPC 2.0 protocol for Claude Code integration via stdin/stdout
 - **CLI Mode**: Command-line tool with `--cli` flag
+- **HTTP Mode**: REST API server with `--http` flag for remote access with API key auth
 
 **Processing Modes:**
 - **Clean mode (default)**: Aggressively strips ads, scripts, styles, nav, footer, sidebars, and non-semantic attributes for AI token efficiency
@@ -139,6 +140,48 @@ webfetch-clean --cli --file test.html --preserve-main --remove-images --format h
 webfetch-clean --cli --file test.html --max-tokens 50000
 ```
 
+### HTTP Server Testing
+
+**Start HTTP server:**
+```bash
+webfetch-clean --http :8080 --api-key my-secret --base-url http://localhost:8080
+```
+
+**Test endpoints:**
+```bash
+# Health check (no auth)
+curl localhost:8080/health
+
+# Initialize
+curl -H "X-API-Key: my-secret" -X POST localhost:8080/mcp \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}'
+
+# List tools (HTTP schema with file_token, result_id, override)
+curl -H "X-API-Key: my-secret" -X POST localhost:8080/mcp \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+
+# Fetch URL
+curl -H "X-API-Key: my-secret" -X POST localhost:8080/mcp \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"webfetch_clean","arguments":{"url":"https://example.com"}}}'
+
+# Create file token
+curl -H "X-API-Key: my-secret" -X POST localhost:8080/admin/tokens \
+  -d '{"file":"/path/to/file.html","expires_minutes":60}'
+
+# Use file token
+curl -H "X-API-Key: my-secret" -X POST localhost:8080/mcp \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"webfetch_clean","arguments":{"file_token":"TOKEN_HERE"}}}'
+
+# Download over-limit result
+curl -H "X-API-Key: my-secret" localhost:8080/results/RESULT_ID
+```
+
+**HTTP server flags:**
+- `--http :8080` — Bind address (default loopback; use `0.0.0.0:8080` for all interfaces)
+- `--api-key SECRET` — API key (or `WEBFETCH_API_KEY` env var; required)
+- `--base-url URL` — Public base URL for download links in over-limit responses
+- `--db webfetch.db` — SQLite database path for file tokens
+
 ## Architecture
 
 The codebase follows a clean pipeline architecture with three core processing stages:
@@ -157,12 +200,29 @@ Both sources feed into the same cleaning and conversion pipeline.
 
 ### Core Components
 
-**main.go** - Entry point and MCP protocol handler
-- Implements JSON-RPC 2.0 protocol for MCP mode
-- Routes CLI vs MCP mode based on flags
+**main.go** - Entry point, MCP protocol handler, mode routing
+- Routes to HTTP, CLI, or stdio MCP mode based on flags
+- Implements JSON-RPC 2.0 protocol for stdio MCP mode
 - Handles `initialize`, `tools/list`, `tools/call` methods
 - CLI flag parsing and execution
 - `ReadFile` function for local file input
+- `processInput()` — pure pipeline function (no I/O at limit-check step)
+
+**httpserver.go** - HTTP server with API key auth
+- `HTTPServer` struct with routes, TempStore, TokenStore
+- `TempStore` — bounded in-memory store for oversized results (100 entries, 60s TTL)
+- Routes: `POST /mcp`, `GET /results/{id}`, `POST /admin/tokens`, `GET /health`
+- Auth middleware: `X-API-Key` header with constant-time comparison
+- HTTP tool schema: `file_token` and `result_id`/`override` instead of raw `file`
+- Over-limit: stores in TempStore, returns structured `OverLimitResult` with retrieval options
+- Graceful shutdown on SIGINT/SIGTERM
+
+**tokenstore.go** - SQLite-backed file access tokens
+- `TokenStore` wrapping sqlc-generated queries
+- `CreateFileToken(filePath, ttl)` — validates file, generates UUID, stores with expiry
+- `RedeemToken(token)` — atomic single-statement redemption (no TOCTOU race)
+- `Cleanup()` — deletes expired and consumed rows
+- `generateUUID()` — RFC 4122 v4 using crypto/rand
 
 **fetcher.go** - HTTP client with timeout and error handling
 - `FetchURL(url, timeout)` - Fetches HTML content
@@ -193,6 +253,7 @@ Both sources feed into the same cleaning and conversion pipeline.
 // go.mod (Go 1.25.5+)
 github.com/PuerkitoBio/goquery v1.11.0        // jQuery-like HTML parsing
 github.com/JohannesKaufmann/html-to-markdown v1.6.0  // HTML to Markdown conversion
+modernc.org/sqlite v1.46.1                   // Pure Go SQLite driver (no CGO)
 ```
 
 ### Data Flow
@@ -206,7 +267,14 @@ github.com/JohannesKaufmann/html-to-markdown v1.6.0  // HTML to Markdown convers
 **CLI Mode:**
 1. Parse CLI flags (`--cli`, `--url` or `--file`, `--format`, etc.)
 2. FetchURL (if `--url`) OR ReadFile (if `--file`) → CleanHTML → ConvertToFormat
-3. Write output to file or stdout
+3. If over limit: write to file. Otherwise: write output to file or stdout
+
+**HTTP Mode:**
+1. HTTP request hits `/mcp` with JSON-RPC body and `X-API-Key` header
+2. Route to method handler (initialize, tools/list, tools/call)
+3. For `tools/call`: resolve file_token or use URL → processInput pipeline
+4. If over limit: store in TempStore, return `OverLimitResult` with result_id
+5. Client can retrieve via `result_id`+`override` or `GET /results/{id}`
 
 ## Code Style
 
@@ -399,3 +467,8 @@ Closes #123
 - **CONTRIBUTING.md**: Full contribution guidelines with code standards and PR process
 - **README.md**: User-facing documentation with installation and usage instructions
 - **docs/CASE_STUDY.md**: Token cost analysis and savings calculations
+- **docs/HTTP_SERVER.md**: HTTP server mode design spec and implementation plan
+- **httpserver.go**: HTTP server, routes, TempStore, auth middleware
+- **tokenstore.go**: SQLite-backed file access token management
+- **sqlc/**: SQL schema and queries for sqlc code generation
+- **db/**: sqlc-generated Go code (committed, no build-time sqlc needed)
