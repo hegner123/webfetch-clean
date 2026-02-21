@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Malformed HTML Test - Edge Cases for webfetch-clean
+    <!-- Unclosed title tag -->
+    <style>
+        body { font-family: sans-serif; }
+        /* Unclosed style tag -->
+</head>
+<body>
+    <!-- Missing closing tags for various elements -->
+    <div class="container">
+        <article>
+            <h1>Intentionally Malformed HTML Document</h1>
+            <p>This document contains various HTML errors to test parser robustness.
+            <!-- Missing closing p tag -->
+
+            <div>
+                <h2>Unclosed Elements</h2>
+                <p>This paragraph is never closed
+                <p>This starts another paragraph without closing the previous
+                <span>Unclosed span
+                <strong>Unclosed strong
+                <div>Nested unclosed div
+            <!-- Multiple divs never closed -->
+
+            <section>
+                <h2>Mismatched Tags
+                <p>This paragraph has a mismatched closing tag</div>
+                <!-- Should be </p> not </div> -->
+
+                <ul>
+                    <li>List item one
+                    <li>List item two
+                    <!-- Missing closing li tags -->
+                    <li>List item three<ul>
+                        <li>Nested list
+                        <li>Also unclosed
+                    <!-- Nested ul never closed -->
+                </ul>
+            </section>
+
+            <!-- Orphaned closing tags -->
+            </span>
+            </div>
+            </article>
+
+            <main>
+                <h1>Duplicate and Invalid Attributes</h1>
+                <div id="test" id="duplicate-id" class="class1" class="class2">
+                    <p onclick="alert('xss')" onclick="alert('duplicate')">
+                        Content with duplicate attributes
+                    </p>
+                </div>
+
+                <!-- Invalid nesting -->
+                <p>
+                    <div>Block element inside inline element</div>
+                    <ul>
+                        <li>List inside paragraph</li>
+                    </ul>
+                </p>
+
+                <!-- Script tags in weird places -->
+                <h2>Heading with <script>console.log('script in heading')</script> inline script</h2>
+
+                <!-- Comments in weird places -->
+                <p>Text <!-- comment in middle of --> content</p>
+
+                <!-- Incomplete tags -->
+                <div class="incomplete
+                <p>Incomplete attribute value
+                <img src=">
+                <a href=
+
+                <!-- Empty and whitespace-only elements -->
+                <div></div>
+                <p>
+
+                </p>
+                <span>     </span>
+
+                <!-- Mixed content models -->
+                <table>
+                    <div>Invalid div in table</div>
+                    <tr>
+                        <td>Cell 1</td>
+                        <p>Invalid p in tr</p>
+                        <td>Cell 2
+                        <!-- Missing closing td -->
+                    </tr>
+                    <span>Invalid span in table</span>
+                </table>
+
+                <!-- Multiple body and head tags -->
+                <head>
+                    <title>Second head tag</title>
+                </head>
+
+                <body>
+                    <p>Content in second body tag</p>
+                </body>
+
+                <!-- Actual content that should be preserved -->
+                <article>
+                    <h1>Real Content Title</h1>
+                    <p>This is actual content that should be extracted despite all the malformed HTML around it.</p>
+                    <h2>Important Information</h2>
+                    <p>Even in a malformed document, semantic content like this should be preserved.</p>
+                    <ul>
+                        <li>Properly formatted list item</li>
+                        <li>Another valid item</li>
+                    </ul>
+                </article>
+
+                <!-- More edge cases -->
+                <pre>
+                    Preformatted <code>code</code> with <em>tags</em>
+                    <!-- and comments -->
+                    and <script>scripts</script>
+                </pre>
+
+                <!-- Deeply nested unclosed elements -->
+                <div><div><div><div><div><div><div><div><div><div>
+                    <p>Very deep nesting without closing tags
+                <!-- All divs left unclosed -->
+
+            </main>
+
+            <!-- Navigation and ads mixed with malformed HTML -->
+            <nav>
+                <ul>
+                    <li><a href="#">Link 1
+                    <li><a href="#">Link 2
+                    <!-- Missing closing tags -->
+                    <div class="ad">
+                        <p>Ad content
+                    </div>
+                </ul>
+            </nav>
+
+            <!-- Footer with unclosed elements -->
+            <footer>
+                <p>Copyright 2026
+                <div class="ad-footer">
+                    <script src="tracking.js">
+                    <!-- Unclosed script tag -->
+                </div>
+            </footer>
+
+<!-- Document ends without closing body and html tags -->

@@ -1,0 +1,186 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.23', '1.24', '1.25']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Display Go version
+      run: go version
+
+    - name: Cache Go modules (Linux/macOS)
+      if: runner.os != 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+          ${{ runner.os }}-go-
+
+    - name: Cache Go modules (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~\AppData\Local\go-build
+          ~\go\pkg\mod
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run tests
+      run: go test -v -short -race -coverprofile="coverage.out" -covermode=atomic ./...
+
+    - name: Display coverage
+      run: go tool cover -func="coverage.out"
+
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.25'
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  build:
+    name: Build Binary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+
+    - name: Build binary (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: go build -v -o webfetch-clean
+
+    - name: Build binary (Windows)
+      if: runner.os == 'Windows'
+      run: go build -v -o webfetch-clean.exe
+
+    - name: Test binary execution (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: ./webfetch-clean --help
+
+    - name: Test binary execution (Windows)
+      if: runner.os == 'Windows'
+      run: .\webfetch-clean.exe --help
+
+    - name: Upload artifact (Linux/macOS)
+      if: runner.os != 'Windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: webfetch-clean-${{ matrix.os }}
+        path: webfetch-clean
+        retention-days: 7
+
+    - name: Upload artifact (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: webfetch-clean-${{ matrix.os }}
+        path: webfetch-clean.exe
+        retention-days: 7
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+
+    - name: Build linux/amd64
+      env:
+        GOOS: linux
+        GOARCH: amd64
+      run: go build -v -ldflags="-s -w" -o webfetch-clean-linux-amd64
+
+    - name: Build linux/arm64
+      env:
+        GOOS: linux
+        GOARCH: arm64
+      run: go build -v -ldflags="-s -w" -o webfetch-clean-linux-arm64
+
+    - name: Build darwin/amd64
+      env:
+        GOOS: darwin
+        GOARCH: amd64
+      run: go build -v -ldflags="-s -w" -o webfetch-clean-darwin-amd64
+
+    - name: Build darwin/arm64
+      env:
+        GOOS: darwin
+        GOARCH: arm64
+      run: go build -v -ldflags="-s -w" -o webfetch-clean-darwin-arm64
+
+    - name: Build windows/amd64
+      env:
+        GOOS: windows
+        GOARCH: amd64
+      run: go build -v -ldflags="-s -w" -o webfetch-clean-windows-amd64.exe
+
+    - name: Build windows/arm64
+      env:
+        GOOS: windows
+        GOARCH: arm64
+      run: go build -v -ldflags="-s -w" -o webfetch-clean-windows-arm64.exe
+
+    - name: Generate checksums
+      run: sha256sum webfetch-clean-* > checksums.txt
+
+    - name: Create release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release create ${{ github.ref_name }} webfetch-clean-* checksums.txt --generate-notes

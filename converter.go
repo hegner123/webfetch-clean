@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	md "github.com/JohannesKaufmann/html-to-markdown"
+	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown"
 )
 
 // ConvertToFormat converts HTML to the specified output format (html or markdown).
@@ -29,13 +29,15 @@ func ConvertToFormat(html string, format string) (string, error) {
 }
 
 // ConvertToMarkdown converts HTML content to Markdown format.
+// Note: The empty check is intentionally defensive since this is an exported function
+// that may be called directly, not just through ConvertToFormat.
 func ConvertToMarkdown(html string) (string, error) {
 	if html == "" {
 		return "", fmt.Errorf("HTML content cannot be empty")
 	}
 
 	// Create converter
-	converter := md.NewConverter("", true, nil)
+	converter := htmltomarkdown.NewConverter("", true, nil)
 
 	// Convert HTML to Markdown
 	markdown, err := converter.ConvertString(html)

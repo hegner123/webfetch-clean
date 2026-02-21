@@ -19,6 +19,16 @@ go.work
 
 # Build output
 webfetch-clean
+test-sites/server
+
+# Installation scripts (security - users should write their own)
+install.sh
+
+# Trash directory
+trash/
+
+# Test results
+test-sites/test-results/
 
 # IDE
 .idea/
@@ -26,6 +36,22 @@ webfetch-clean
 *.swp
 *.swo
 *~
+
+# Generated output files
+*-cleaned.md
+*-cleaned.html
+example-com.md
+
+# SQLite databases
+*.db
+*.db-wal
+*.db-shm
+
+# Local config
+.claude/
+
+# Environment secrets
+.env
 
 # OS
 .DS_Store

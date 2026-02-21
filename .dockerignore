@@ -1,0 +1,14 @@
+.git
+*.test
+*.out
+test/
+docs/
+.claude/
+.idea/
+.vscode/
+*.md
+!go.mod
+.env
+*.db
+*.db-wal
+*.db-shm

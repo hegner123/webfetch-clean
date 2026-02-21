@@ -2,30 +2,73 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+)
+
+// Version is the application version
+const Version = "1.0.0"
+
+// MaxScannerBuffer is the maximum buffer size for reading MCP requests (10MB)
+const MaxScannerBuffer = 10 * 1024 * 1024
+
+// Exit codes for CLI mode
+const (
+	ExitSuccess        = 0
+	ExitInvalidArgs    = 1
+	ExitFetchError     = 2
+	ExitProcessError   = 3
+	ExitFileWriteError = 4
+)
+
+// JSON-RPC 2.0 error codes
+const (
+	ErrParse          = -32700
+	ErrInvalidRequest = -32600
+	ErrMethodNotFound = -32601
+	ErrInvalidParams  = -32602
+	ErrInternal       = -32603
 )
 
 // Config holds the application configuration
 type Config struct {
 	URL             string
+	File            string
 	Format          string
+	Mode            string
 	PreserveMain    bool
 	RemoveImages    bool
+	StripLinks      bool
+	UseBrowser      bool
 	Timeout         int
 	OutputFile      string
-	MCPMode         bool
+	OutputDirectory string
+	MaxTokens       int
+	CLIMode         bool
+	ShowVersion     bool
+	Verbose         bool
+	HTTPAddr        string
+	APIKey          string
+	BaseURL         string
+	DBPath          string
 }
 
 // CleanResult represents the result of cleaning a URL
 type CleanResult struct {
-	Content string            `json:"content"`
-	URL     string            `json:"url"`
-	Title   string            `json:"title,omitempty"`
-	Format  string            `json:"format"`
-	Error   string            `json:"error,omitempty"`
+	Content    string `json:"content"`
+	URL        string `json:"url"`
+	Title      string `json:"title,omitempty"`
+	Format     string `json:"format"`
+	Error      string `json:"error,omitempty"`
+	TokenCount int    `json:"token_count,omitempty"`
+	OverLimit  bool   `json:"-"`
+	RawContent string `json:"-"`
 }
 
 // MCP JSON-RPC types
@@ -103,24 +146,96 @@ type ContentItem struct {
 func main() {
 	config := parseFlags()
 
-	if config.MCPMode {
-		runMCPServer()
+	if config.ShowVersion {
+		fmt.Printf("webfetch-clean version %s\n", Version)
 		return
 	}
 
-	runCLI(config)
+	if config.HTTPAddr != "" {
+		runHTTPServer(config)
+		return
+	}
+
+	if config.CLIMode {
+		runCLI(config)
+		return
+	}
+
+	runMCPServer()
+}
+
+func printUsage() {
+	fmt.Fprintf(os.Stderr, `webfetch-clean - Fetch and clean web pages
+
+USAGE:
+  webfetch-clean [options]
+
+DESCRIPTION:
+  In CLI mode, fetches a URL, removes ads/scripts/navigation, and outputs
+  clean HTML or Markdown. By default, runs as an MCP server.
+
+MCP MODE (default):
+  Runs a JSON-RPC 2.0 MCP server on stdin/stdout for Claude Code integration.
+
+CLI MODE:
+  webfetch-clean --cli --url https://example.com
+  webfetch-clean --cli --file local.html
+  webfetch-clean --cli --url https://example.com --format html
+  webfetch-clean --cli --url https://example.com --output result.md
+
+HTTP MODE:
+  webfetch-clean --http :8080 --api-key SECRET --base-url http://localhost:8080
+  Endpoints: POST /mcp, GET /results/{id}, POST /admin/tokens, GET /health
+
+OPTIONS:
+`)
+	flag.PrintDefaults()
+	fmt.Fprintf(os.Stderr, `
+EXAMPLES:
+  # Fetch a page and output markdown to stdout
+  webfetch-clean --cli --url https://example.com
+
+  # Save cleaned HTML to a file
+  webfetch-clean --cli --url https://example.com --format html --output page.html
+
+  # Keep only main content, remove images
+  webfetch-clean --cli --url https://example.com --preserve-main --remove-images
+
+  # Use headless browser for JavaScript-rendered pages
+  webfetch-clean --cli --url https://spa-example.com --browser
+
+  # Run as HTTP server with API key auth
+  webfetch-clean --http :8080 --api-key my-secret --base-url http://localhost:8080
+
+  # Run as MCP server (default)
+  webfetch-clean
+`)
 }
 
 func parseFlags() Config {
 	config := Config{}
 
-	flag.BoolVar(&config.MCPMode, "mcp", false, "Run as MCP server")
-	flag.StringVar(&config.URL, "url", "", "URL to fetch (required in CLI mode)")
-	flag.StringVar(&config.Format, "format", "markdown", "Output format: html or markdown")
-	flag.BoolVar(&config.PreserveMain, "preserve-main", false, "Only preserve <main>/<article> content")
-	flag.BoolVar(&config.RemoveImages, "remove-images", false, "Remove all images")
-	flag.IntVar(&config.Timeout, "timeout", 30, "HTTP timeout in seconds")
-	flag.StringVar(&config.OutputFile, "output", "", "Write output to file (default: stdout)")
+	flag.Usage = printUsage
+
+	flag.BoolVar(&config.ShowVersion, "version", false, "Show version and exit")
+	flag.BoolVar(&config.CLIMode, "cli", false, "Run in CLI mode (default: MCP server mode)")
+	flag.StringVar(&config.URL, "url", "", "URL to fetch (alternative to --file)")
+	flag.StringVar(&config.File, "file", "", "Local HTML file to process (alternative to --url)")
+	flag.StringVar(&config.Format, "format", "markdown", "Output format: html or markdown (CLI mode only)")
+	flag.BoolVar(&config.PreserveMain, "preserve-main", false, "Only preserve <main>/<article> content (CLI mode only)")
+	flag.BoolVar(&config.RemoveImages, "remove-images", false, "Remove all images (CLI mode only)")
+	flag.StringVar(&config.Mode, "mode", "clean", "Processing mode: clean or scrape (CLI mode only)")
+	flag.BoolVar(&config.StripLinks, "strip-links", false, "Replace links with their text content (CLI mode only)")
+	flag.BoolVar(&config.UseBrowser, "browser", false, "Use headless browser for JavaScript-rendered pages (CLI mode only)")
+	flag.IntVar(&config.Timeout, "timeout", 30, "HTTP timeout in seconds (CLI mode only)")
+	flag.StringVar(&config.OutputFile, "output", "", "Write output to file (default: stdout, CLI mode only)")
+	flag.BoolVar(&config.Verbose, "verbose", false, "Print verbose progress messages to stderr (CLI mode only)")
+
+	// HTTP server mode flags
+	flag.StringVar(&config.HTTPAddr, "http", "", "Start HTTP server on address (e.g., :8080)")
+	flag.StringVar(&config.APIKey, "api-key", "", "API key for HTTP mode (or WEBFETCH_API_KEY env)")
+	flag.StringVar(&config.BaseURL, "base-url", "", "Public base URL for download links (e.g., https://fetch.example.com)")
+	flag.StringVar(&config.DBPath, "db", "webfetch.db", "SQLite database path for file tokens (HTTP mode)")
 
 	flag.Parse()
 
@@ -128,31 +243,100 @@ func parseFlags() Config {
 }
 
 func runCLI(config Config) {
-	if config.URL == "" {
-		fmt.Fprintln(os.Stderr, "Error: --url is required")
+	if config.URL == "" && config.File == "" {
+		fmt.Fprintln(os.Stderr, "Error: --url or --file is required")
 		flag.Usage()
-		os.Exit(1)
+		os.Exit(ExitInvalidArgs)
+	}
+
+	if config.URL != "" && config.File != "" {
+		fmt.Fprintln(os.Stderr, "Error: cannot specify both --url and --file")
+		os.Exit(ExitInvalidArgs)
+	}
+
+	if config.UseBrowser && config.File != "" {
+		fmt.Fprintln(os.Stderr, "Error: --browser cannot be used with --file")
+		os.Exit(ExitInvalidArgs)
 	}
 
 	if config.Format != "html" && config.Format != "markdown" {
 		fmt.Fprintln(os.Stderr, "Error: --format must be 'html' or 'markdown'")
-		os.Exit(1)
+		os.Exit(ExitInvalidArgs)
 	}
 
-	result := processURL(config)
+	if config.Mode != "clean" && config.Mode != "scrape" {
+		fmt.Fprintln(os.Stderr, "Error: --mode must be 'clean' or 'scrape'")
+		os.Exit(ExitInvalidArgs)
+	}
+
+	if config.Verbose {
+		if config.URL != "" {
+			fmt.Fprintf(os.Stderr, "[verbose] Fetching URL: %s\n", config.URL)
+			fmt.Fprintf(os.Stderr, "[verbose] Timeout: %d seconds\n", config.Timeout)
+			if config.UseBrowser {
+				fmt.Fprintln(os.Stderr, "[verbose] Using headless browser (Chromium) for JS-rendered content")
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "[verbose] Reading file: %s\n", config.File)
+		}
+		fmt.Fprintf(os.Stderr, "[verbose] Output format: %s\n", config.Format)
+		fmt.Fprintf(os.Stderr, "[verbose] Processing mode: %s\n", config.Mode)
+		if config.PreserveMain {
+			fmt.Fprintln(os.Stderr, "[verbose] Preserving main/article content only")
+		}
+		if config.RemoveImages {
+			fmt.Fprintln(os.Stderr, "[verbose] Removing images")
+		}
+		if config.StripLinks {
+			fmt.Fprintln(os.Stderr, "[verbose] Stripping links")
+		}
+	}
+
+	result := processInput(config)
 
 	if result.Error != "" {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", result.Error)
-		os.Exit(1)
+		os.Exit(ExitProcessError)
+	}
+
+	if result.OverLimit {
+		filename := GenerateOutputFilename(config.URL, config.File, config.Format)
+		if config.OutputDirectory != "" {
+			filename = filepath.Join(config.OutputDirectory, filename)
+		}
+		filename, err := GenerateUniqueFilename(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating unique filename: %v\n", err)
+			os.Exit(ExitFileWriteError)
+		}
+		err = SafeWriteFile(filename, []byte(result.RawContent), 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+			os.Exit(ExitFileWriteError)
+		}
+		result.Content = fmt.Sprintf("Output exceeded limit (%d tokens, limit: %d tokens). Content written to file: %s",
+			result.TokenCount, config.MaxTokens, filename)
+		result.RawContent = ""
 	}
 
 	output := result.Content
 
+	if config.Verbose {
+		fmt.Fprintf(os.Stderr, "[verbose] Content fetched and cleaned successfully\n")
+		fmt.Fprintf(os.Stderr, "[verbose] Output size: %d bytes\n", len(output))
+	}
+
 	if config.OutputFile != "" {
-		err := os.WriteFile(config.OutputFile, []byte(output), 0644)
+		if config.Verbose {
+			fmt.Fprintf(os.Stderr, "[verbose] Writing to file: %s\n", config.OutputFile)
+		}
+		err := SafeWriteFile(config.OutputFile, []byte(output), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
-			os.Exit(1)
+			os.Exit(ExitFileWriteError)
+		}
+		if config.Verbose {
+			fmt.Fprintf(os.Stderr, "[verbose] File written successfully\n")
 		}
 	} else {
 		fmt.Println(output)
@@ -160,20 +344,51 @@ func runCLI(config Config) {
 }
 
 func runMCPServer() {
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue
-		}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		var req JSONRPCRequest
-		if err := json.Unmarshal([]byte(line), &req); err != nil {
-			sendError(nil, -32700, "Parse error")
-			continue
-		}
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		cancel()
+	}()
 
-		handleRequest(req)
+	// Create a channel to receive lines from stdin
+	lines := make(chan string)
+	scanErr := make(chan error, 1)
+
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Buffer(make([]byte, 0, MaxScannerBuffer), MaxScannerBuffer)
+		for scanner.Scan() {
+			lines <- scanner.Text()
+		}
+		scanErr <- scanner.Err()
+		close(lines)
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case line, ok := <-lines:
+			if !ok {
+				// stdin closed
+				return
+			}
+			if line == "" {
+				continue
+			}
+
+			var req JSONRPCRequest
+			if err := json.Unmarshal([]byte(line), &req); err != nil {
+				sendError(nil, ErrParse, "Parse error")
+				continue
+			}
+
+			handleRequest(req)
+		}
 	}
 }
 
@@ -195,7 +410,7 @@ func handleRequest(req JSONRPCRequest) {
 		if isNotification {
 			return
 		}
-		sendError(req.ID, -32601, "Method not found")
+		sendError(req.ID, ErrMethodNotFound, "Method not found")
 	}
 }
 
@@ -204,7 +419,7 @@ func handleInitialize(req JSONRPCRequest) {
 		ProtocolVersion: "2024-11-05",
 		ServerInfo: ServerInfo{
 			Name:    "webfetch-clean",
-			Version: "1.0.0",
+			Version: Version,
 		},
 		Capabilities: Capabilities{
 			Tools: map[string]bool{
@@ -221,19 +436,29 @@ func handleToolsList(req JSONRPCRequest) {
 		Tools: []Tool{
 			{
 				Name:        "webfetch_clean",
-				Description: "Fetch a URL, clean HTML by removing ads/scripts/styles/navigation, and convert to markdown or cleaned HTML",
+				Description: "Fetch a URL or read a local file, clean HTML by removing ads/scripts/styles/navigation, and convert to markdown or cleaned HTML",
 				InputSchema: InputSchema{
 					Type: "object",
 					Properties: map[string]Property{
 						"url": {
 							Type:        "string",
-							Description: "URL to fetch and clean (required)",
+							Description: "URL to fetch and clean (provide url or file, not both)",
+						},
+						"file": {
+							Type:        "string",
+							Description: "Local file path to read and clean (provide url or file, not both)",
 						},
 						"output_format": {
 							Type:        "string",
 							Description: "Output format: 'html' or 'markdown' (default: 'markdown')",
 							Enum:        []string{"html", "markdown"},
 							Default:     "markdown",
+						},
+						"mode": {
+							Type:        "string",
+							Description: "Processing mode: 'clean' removes ads/scripts/nav for AI workflows, 'scrape' preserves page structure for HTML ingestion (default: 'clean')",
+							Enum:        []string{"clean", "scrape"},
+							Default:     "clean",
 						},
 						"preserve_main_only": {
 							Type:        "boolean",
@@ -245,13 +470,33 @@ func handleToolsList(req JSONRPCRequest) {
 							Description: "Remove all images from output (default: false)",
 							Default:     false,
 						},
+						"strip_links": {
+							Type:        "boolean",
+							Description: "Replace links with their text content (default: false)",
+							Default:     false,
+						},
+						"use_browser": {
+							Type:        "boolean",
+							Description: "Use headless browser (Chromium) for JavaScript-rendered pages. Only valid with 'url'. Slower but handles SPAs.",
+							Default:     false,
+						},
 						"timeout": {
 							Type:        "integer",
 							Description: "HTTP request timeout in seconds (default: 30)",
 							Default:     30,
 						},
+						"output_directory": {
+							Type:        "string",
+							Description: "Directory to write output files when token limit is exceeded (default: current directory)",
+							Default:     "",
+						},
+						"max_tokens": {
+							Type:        "integer",
+							Description: "Maximum tokens for output before writing to file (default: 100000, where 3 bytes = 1 token)",
+							Default:     100000,
+						},
 					},
-					Required: []string{"url"},
+					Required: []string{},
 				},
 			},
 		},
@@ -262,29 +507,42 @@ func handleToolsList(req JSONRPCRequest) {
 func handleToolsCall(req JSONRPCRequest) {
 	var params ToolCallParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
-		sendError(req.ID, -32602, "Invalid params")
+		sendError(req.ID, ErrInvalidParams, "Invalid params")
 		return
 	}
 
 	if params.Name != "webfetch_clean" {
-		sendError(req.ID, -32602, "Unknown tool")
+		sendError(req.ID, ErrInvalidParams, "Unknown tool")
 		return
 	}
 
-	url, ok := params.Arguments["url"].(string)
-	if !ok || url == "" {
-		sendError(req.ID, -32602, "Missing or invalid 'url' parameter")
+	url, _ := params.Arguments["url"].(string)
+	file, _ := params.Arguments["file"].(string)
+
+	if url != "" && file != "" {
+		sendError(req.ID, ErrInvalidParams, "Cannot specify both 'url' and 'file' parameters")
+		return
+	}
+	if url == "" && file == "" {
+		sendError(req.ID, ErrInvalidParams, "Must provide either 'url' or 'file' parameter")
 		return
 	}
 
 	config := Config{
-		URL:     url,
-		Format:  "markdown",
-		Timeout: 30,
+		URL:       url,
+		File:      file,
+		Format:    "markdown",
+		Mode:      "clean",
+		Timeout:   30,
+		MaxTokens: 100000,
 	}
 
 	if format, ok := params.Arguments["output_format"].(string); ok {
 		config.Format = format
+	}
+
+	if mode, ok := params.Arguments["mode"].(string); ok {
+		config.Mode = mode
 	}
 
 	if preserveMain, ok := params.Arguments["preserve_main_only"].(bool); ok {
@@ -295,15 +553,56 @@ func handleToolsCall(req JSONRPCRequest) {
 		config.RemoveImages = removeImages
 	}
 
+	if stripLinks, ok := params.Arguments["strip_links"].(bool); ok {
+		config.StripLinks = stripLinks
+	}
+
+	if useBrowser, ok := params.Arguments["use_browser"].(bool); ok {
+		config.UseBrowser = useBrowser
+	}
+
+	if config.UseBrowser && config.File != "" {
+		sendError(req.ID, ErrInvalidParams, "Cannot use 'use_browser' with 'file' parameter")
+		return
+	}
+
 	if timeout, ok := params.Arguments["timeout"].(float64); ok {
 		config.Timeout = int(timeout)
 	}
 
-	result := processURL(config)
+	if outputDir, ok := params.Arguments["output_directory"].(string); ok {
+		config.OutputDirectory = outputDir
+	}
+
+	if maxTokens, ok := params.Arguments["max_tokens"].(float64); ok {
+		config.MaxTokens = int(maxTokens)
+	}
+
+	result := processInput(config)
+
+	if result.OverLimit {
+		filename := GenerateOutputFilename(config.URL, config.File, config.Format)
+		if config.OutputDirectory != "" {
+			filename = filepath.Join(config.OutputDirectory, filename)
+		}
+		filename, err := GenerateUniqueFilename(filename)
+		if err != nil {
+			sendError(req.ID, ErrInternal, fmt.Sprintf("failed to generate unique filename: %v", err))
+			return
+		}
+		err = SafeWriteFile(filename, []byte(result.RawContent), 0644)
+		if err != nil {
+			sendError(req.ID, ErrInternal, fmt.Sprintf("failed to write output file: %v", err))
+			return
+		}
+		result.Content = fmt.Sprintf("Output exceeded limit (%d tokens, limit: %d tokens). Content written to file: %s",
+			result.TokenCount, config.MaxTokens, filename)
+		result.RawContent = ""
+	}
 
 	jsonResult, err := json.Marshal(result)
 	if err != nil {
-		sendError(req.ID, -32603, "Failed to marshal result")
+		sendError(req.ID, ErrInternal, "Failed to marshal result")
 		return
 	}
 
@@ -319,21 +618,38 @@ func handleToolsCall(req JSONRPCRequest) {
 	sendResponse(req.ID, response)
 }
 
-func processURL(config Config) CleanResult {
+func processInput(config Config) CleanResult {
 	result := CleanResult{
 		URL:    config.URL,
 		Format: config.Format,
 	}
 
-	// Step 1: Fetch the URL
-	html, err := FetchURL(config.URL, config.Timeout)
+	var html string
+	var err error
+
+	// Step 1: Get HTML from URL or file
+	if config.File != "" {
+		html, err = ReadFile(config.File)
+	} else if config.UseBrowser {
+		var finalURL string
+		html, finalURL, err = FetchBrowser(context.Background(), config.URL, config.Timeout)
+		if finalURL != "" {
+			result.URL = finalURL
+		}
+	} else {
+		var finalURL string
+		html, finalURL, err = FetchURL(context.Background(), config.URL, config.Timeout)
+		if finalURL != "" {
+			result.URL = finalURL
+		}
+	}
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
 
 	// Step 2: Clean the HTML
-	cleanedHTML, err := CleanHTML(html, config.PreserveMain, config.RemoveImages)
+	cleanedHTML, err := CleanHTML(html, config.PreserveMain, config.RemoveImages, config.StripLinks, config.Mode)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -343,6 +659,16 @@ func processURL(config Config) CleanResult {
 	output, err := ConvertToFormat(cleanedHTML, config.Format)
 	if err != nil {
 		result.Error = err.Error()
+		return result
+	}
+
+	// Step 4: Check token limit — signal over-limit to caller, no I/O here
+	// Token calculation: 3 bytes = 1 token
+	tokenCount := len(output) / 3
+	if config.MaxTokens > 0 && tokenCount > config.MaxTokens {
+		result.OverLimit = true
+		result.TokenCount = tokenCount
+		result.RawContent = output
 		return result
 	}
 
@@ -379,4 +705,22 @@ func sendError(id any, code int, message string) {
 		return
 	}
 	fmt.Println(string(data))
+}
+
+// SafeWriteFile writes data to a file, refusing to write through symlinks
+// to prevent symlink attacks. If the path is a symlink, it returns an error.
+func SafeWriteFile(path string, data []byte, perm os.FileMode) error {
+	// Check if path exists and is a symlink
+	info, err := os.Lstat(path)
+	if err == nil {
+		// Path exists - check if it's a symlink
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to write to symlink: %s", path)
+		}
+	} else if !os.IsNotExist(err) {
+		// Lstat failed for a reason other than "not exist"
+		return fmt.Errorf("failed to check path: %w", err)
+	}
+	// If path doesn't exist or is a regular file, proceed with write
+	return os.WriteFile(path, data, perm)
 }

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Minimal Content Test - Mostly Clutter</title>
+    <script src="analytics1.js"></script>
+    <script src="analytics2.js"></script>
+    <script src="tracking.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        .ad { background: yellow; padding: 20px; }
+        .sidebar { width: 300px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <!-- Top banner ad -->
+    <div class="ad-banner" id="top-ad-728x90">
+        <img src="ad-728x90.jpg" alt="Advertisement">
+    </div>
+
+    <!-- Cookie consent banner -->
+    <div class="cookie-banner">
+        <p>We use cookies to track your every move. By using this site, you agree to our invasive tracking practices.</p>
+        <button>Accept All</button>
+        <button>Manage Preferences</button>
+    </div>
+
+    <!-- Newsletter popup -->
+    <div class="popup-modal">
+        <div class="modal-content">
+            <h2>Subscribe to our newsletter!</h2>
+            <p>Get daily spam in your inbox!</p>
+            <form>
+                <input type="email" placeholder="Your email">
+                <button>Subscribe</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <div class="ad">Nav Ad</div>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Left sidebar with ads -->
+    <aside class="sidebar-left">
+        <div class="ad-widget">
+            <h3>Sponsored</h3>
+            <p>Buy this product!</p>
+        </div>
+        <div class="ad-widget">
+            <h3>Advertisement</h3>
+            <p>Click here now!</p>
+        </div>
+        <div class="social-share">
+            <button>Share on Facebook</button>
+            <button>Share on Twitter</button>
+            <button>Share on LinkedIn</button>
+        </div>
+    </aside>
+
+    <!-- Main content area - MINIMAL ACTUAL CONTENT -->
+    <main>
+        <!-- Ad above content -->
+        <div class="ad" id="content-top-ad">
+            <p>Advertisement - Click here!</p>
+        </div>
+
+        <article>
+            <!-- The ONLY actual content on the page -->
+            <h1>Article Title</h1>
+            <p>This is the only paragraph of actual content on this entire page. Everything else is ads, navigation, social widgets, and other clutter.</p>
+        </article>
+
+        <!-- Ad below content -->
+        <div class="ad" id="content-bottom-ad">
+            <p>More advertisements here!</p>
+        </div>
+
+        <!-- Comments widget -->
+        <div class="comments-widget">
+            <h3>Comments</h3>
+            <iframe src="https://comments.example.com/widget"></iframe>
+        </div>
+
+        <!-- Related articles (actually ads) -->
+        <div class="related-articles">
+            <h3>You May Also Like</h3>
+            <div class="ad native-ad">
+                <p>Sponsored Content 1</p>
+            </div>
+            <div class="ad native-ad">
+                <p>Sponsored Content 2</p>
+            </div>
+            <div class="ad native-ad">
+                <p>Sponsored Content 3</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Right sidebar with more ads -->
+    <aside class="sidebar-right">
+        <div class="ad-unit">
+            <h4>Advertisement</h4>
+            <img src="ad-300x250.jpg" alt="Ad">
+        </div>
+        <div class="ad-unit">
+            <h4>Sponsored</h4>
+            <img src="ad-300x600.jpg" alt="Ad">
+        </div>
+        <div class="widget">
+            <h4>Follow Us</h4>
+            <div class="social-links">
+                <a href="#">Facebook</a>
+                <a href="#">Twitter</a>
+                <a href="#">Instagram</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Footer with ads -->
+    <footer>
+        <div class="ad-footer">
+            <p>Footer Advertisement</p>
+        </div>
+        <nav>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/cookies">Cookies</a>
+        </nav>
+        <p>Copyright 2026</p>
+    </footer>
+
+    <!-- Sticky bottom ad -->
+    <div class="ad-sticky-bottom">
+        <p>Sticky bottom advertisement</p>
+        <button>X</button>
+    </div>
+
+    <!-- Tracking iframes -->
+    <iframe src="https://tracking1.example.com/pixel" width="1" height="1"></iframe>
+    <iframe src="https://tracking2.example.com/pixel" width="1" height="1"></iframe>
+    <iframe src="https://tracking3.example.com/pixel" width="1" height="1"></iframe>
+
+    <!-- Scripts -->
+    <script src="ad-loader.js"></script>
+    <script src="popup-manager.js"></script>
+    <script src="social-widgets.js"></script>
+</body>
+</html>

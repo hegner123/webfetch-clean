@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Next.js App</title>
+    <link rel="stylesheet" href="/_next/static/css/app.css">
+</head>
+<body>
+    <div id="__next"></div>
+
+    <script>
+        // Simulating Next.js client-side rendering
+        const articleData = {
+            title: "Modern Web Development with Next.js",
+            author: "Jane Doe",
+            date: "January 14, 2026",
+            content: `
+                <h1>Modern Web Development with Next.js</h1>
+                <p>Next.js combines the best of server-side rendering and static generation to create fast, SEO-friendly web applications.</p>
+
+                <h2>1. Server-Side Rendering</h2>
+                <p>SSR ensures your pages are fully rendered on the server, improving initial load time and SEO. This is especially important for content-heavy sites.</p>
+
+                <h2>2. Static Generation</h2>
+                <p>For content that doesn't change frequently, static generation pre-renders pages at build time, resulting in lightning-fast page loads.</p>
+
+                <h2>3. API Routes</h2>
+                <p>Build your backend API right alongside your frontend code. API routes make it easy to create serverless functions without a separate backend.</p>
+
+                <h2>4. Image Optimization</h2>
+                <p>The Next.js Image component automatically optimizes images for different screen sizes and formats, reducing bandwidth and improving performance.</p>
+
+                <h2>5. File-based Routing</h2>
+                <p>Create new routes simply by adding files to the pages directory. No complex routing configuration needed.</p>
+
+                <h2>Conclusion</h2>
+                <p>Next.js provides a comprehensive framework for building production-ready React applications with excellent performance and developer experience.</p>
+            `
+        };
+
+        // Render function (simulating React hydration)
+        window.addEventListener('DOMContentLoaded', function() {
+            const root = document.getElementById('__next');
+            root.innerHTML = `
+                <div class="app">
+                    <header class="header">
+                        <nav>
+                            <a href="/">Home</a>
+                            <a href="/blog">Blog</a>
+                            <a href="/about">About</a>
+                        </nav>
+                    </header>
+                    <main class="main-content">
+                        <article>
+                            ${articleData.content}
+                        </article>
+                    </main>
+                    <footer class="footer">
+                        <p>© 2026 Next.js Blog</p>
+                    </footer>
+                </div>
+            `;
+        });
+    </script>
+
+    <script src="/_next/static/chunks/webpack.js"></script>
+    <script src="/_next/static/chunks/framework.js"></script>
+    <script src="/_next/static/chunks/main.js"></script>
+    <script src="/_next/static/chunks/pages/_app.js"></script>
+</body>
+</html>

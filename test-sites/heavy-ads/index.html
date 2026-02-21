@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Heavy Ads Test Site - Stress Test for webfetch-clean</title>
+    <meta name="description" content="Test page with excessive advertising">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .ad-banner { background: red; padding: 20px; margin: 10px; }
+        .advertisement { background: orange; padding: 15px; }
+        #top-ad { height: 200px; background: yellow; }
+    </style>
+    <script>
+        // Analytics tracking
+        console.log('tracking loaded');
+    </script>
+    <script src="https://ads.example.com/script.js"></script>
+</head>
+<body>
+    <!-- Top banner ad -->
+    <div id="top-ad" class="advertisement">
+        <h2>BUY NOW! LIMITED TIME OFFER!</h2>
+        <p>Click here for amazing deals!</p>
+    </div>
+
+    <!-- Navigation with ads -->
+    <nav class="main-nav">
+        <div class="ad-banner">Sponsored Link</div>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <div class="ad-unit">Advertisement</div>
+    </nav>
+
+    <!-- Sidebar with ads -->
+    <aside class="sidebar">
+        <div class="ad-widget">
+            <h3>Sponsored Content</h3>
+            <p>Buy our product now!</p>
+        </div>
+        <div class="advertisement-block">
+            <img src="ad1.jpg" alt="Ad">
+        </div>
+        <div id="sidebar-ad-1">More ads here</div>
+        <div id="sidebar-ad-2">Even more ads</div>
+        <div class="ad-banner">Banner ad in sidebar</div>
+    </aside>
+
+    <!-- Main content with inline ads -->
+    <main>
+        <article>
+            <h1>Actual Article Title - This Should Be Preserved</h1>
+
+            <p>This is the actual content that users want to read. It contains valuable information about the topic.</p>
+
+            <!-- Inline ad -->
+            <div class="ad-inline advertisement">
+                <h3>SPECIAL OFFER!</h3>
+                <p>Get 50% off today only!</p>
+            </div>
+
+            <p>More actual content here. This paragraph discusses important details about the subject matter.</p>
+
+            <!-- Another ad -->
+            <div id="middle-ad" class="ad-banner">
+                <img src="banner-ad.jpg" alt="Advertisement">
+            </div>
+
+            <h2>Important Subsection</h2>
+            <p>This section contains critical information that should be extracted.</p>
+
+            <!-- Ad disguised as content -->
+            <div class="sponsored-content ad-native">
+                <h3>You Won't Believe This!</h3>
+                <p>Clickbait advertisement pretending to be content.</p>
+            </div>
+
+            <p>Continuing with the actual article content that provides value to readers.</p>
+
+            <!-- Multiple ads in a row -->
+            <div class="ad-container">
+                <div class="ad-unit">Ad 1</div>
+                <div class="ad-unit">Ad 2</div>
+                <div class="ad-unit">Ad 3</div>
+            </div>
+
+            <h2>Conclusion</h2>
+            <p>The conclusion of the article with final thoughts and recommendations.</p>
+        </article>
+
+        <!-- Bottom ads -->
+        <div id="bottom-ads">
+            <div class="advertisement-large">
+                <h2>HUGE SALE!</h2>
+                <p>Click now before it's too late!</p>
+            </div>
+            <div class="ad-banner">Bottom banner</div>
+        </div>
+    </main>
+
+    <!-- Popup modal ad -->
+    <div id="popup-ad" class="modal advertisement">
+        <div class="modal-content">
+            <h2>Subscribe to our newsletter!</h2>
+            <p>Get spam in your inbox daily!</p>
+        </div>
+    </div>
+
+    <!-- Cookie banner -->
+    <div class="cookie-banner advertisement">
+        <p>We use cookies to track everything you do.</p>
+    </div>
+
+    <!-- Footer with ads -->
+    <footer>
+        <div class="ad-footer">Footer advertisement</div>
+        <p>Copyright 2026 Test Site</p>
+        <div class="advertisement">More footer ads</div>
+    </footer>
+
+    <!-- Tracking iframes -->
+    <iframe src="https://tracking.example.com/pixel" width="1" height="1"></iframe>
+    <iframe src="https://ads.example.com/track" width="0" height="0"></iframe>
+
+    <!-- More scripts -->
+    <script src="analytics.js"></script>
+    <script src="ad-loader.js"></script>
+</body>
+</html>

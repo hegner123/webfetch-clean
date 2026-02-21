@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Navigation-Heavy Test - webfetch-clean Stress Test</title>
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="top-nav">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/products">Products</a>
+                <ul class="dropdown">
+                    <li><a href="/products/category1">Category 1</a></li>
+                    <li><a href="/products/category2">Category 2</a></li>
+                    <li><a href="/products/category3">Category 3</a></li>
+                </ul>
+            </li>
+            <li><a href="/services">Services</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Breadcrumb navigation -->
+    <nav class="breadcrumb">
+        <a href="/">Home</a> &gt;
+        <a href="/category">Category</a> &gt;
+        <a href="/category/subcategory">Subcategory</a> &gt;
+        <span>Current Page</span>
+    </nav>
+
+    <!-- Secondary navigation -->
+    <nav class="secondary-nav">
+        <ul>
+            <li><a href="/news">News</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="/resources">Resources</a></li>
+            <li><a href="/support">Support</a></li>
+            <li><a href="/faq">FAQ</a></li>
+        </ul>
+    </nav>
+
+    <!-- Left sidebar navigation -->
+    <aside class="sidebar-left">
+        <nav class="sidebar-nav">
+            <h3>Categories</h3>
+            <ul>
+                <li><a href="/cat/tech">Technology</a>
+                    <ul>
+                        <li><a href="/cat/tech/software">Software</a></li>
+                        <li><a href="/cat/tech/hardware">Hardware</a></li>
+                        <li><a href="/cat/tech/mobile">Mobile</a></li>
+                    </ul>
+                </li>
+                <li><a href="/cat/business">Business</a>
+                    <ul>
+                        <li><a href="/cat/business/finance">Finance</a></li>
+                        <li><a href="/cat/business/marketing">Marketing</a></li>
+                        <li><a href="/cat/business/management">Management</a></li>
+                    </ul>
+                </li>
+                <li><a href="/cat/lifestyle">Lifestyle</a></li>
+                <li><a href="/cat/health">Health</a></li>
+            </ul>
+        </nav>
+
+        <nav class="tags-nav">
+            <h3>Popular Tags</h3>
+            <div class="tag-cloud">
+                <a href="/tag/javascript">JavaScript</a>
+                <a href="/tag/python">Python</a>
+                <a href="/tag/golang">Go</a>
+                <a href="/tag/react">React</a>
+                <a href="/tag/vue">Vue</a>
+                <a href="/tag/angular">Angular</a>
+                <a href="/tag/nodejs">Node.js</a>
+                <a href="/tag/database">Database</a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main>
+        <article>
+            <h1>Navigation-Heavy Test Page</h1>
+
+            <p>This is the actual article content that should be preserved after cleaning.</p>
+
+            <h2>Key Information</h2>
+            <p>This section contains important information that readers are looking for.</p>
+
+            <p>More content that should be extracted and displayed to users.</p>
+
+            <!-- In-content navigation -->
+            <nav class="table-of-contents">
+                <h3>Table of Contents</h3>
+                <ul>
+                    <li><a href="#section1">Section 1</a></li>
+                    <li><a href="#section2">Section 2</a></li>
+                    <li><a href="#section3">Section 3</a></li>
+                    <li><a href="#section4">Section 4</a></li>
+                </ul>
+            </nav>
+
+            <h2 id="section1">Section 1</h2>
+            <p>Content for section 1 that provides valuable information.</p>
+
+            <h2 id="section2">Section 2</h2>
+            <p>Content for section 2 with more details and explanations.</p>
+
+            <!-- Related articles navigation -->
+            <nav class="related-articles">
+                <h3>Related Articles</h3>
+                <ul>
+                    <li><a href="/article1">Related Article 1</a></li>
+                    <li><a href="/article2">Related Article 2</a></li>
+                    <li><a href="/article3">Related Article 3</a></li>
+                </ul>
+            </nav>
+
+            <h2 id="section3">Section 3</h2>
+            <p>More content that should be preserved in the cleaned output.</p>
+        </article>
+
+        <!-- Pagination navigation -->
+        <nav class="pagination">
+            <a href="/page/1">1</a>
+            <a href="/page/2">2</a>
+            <a href="/page/3" class="active">3</a>
+            <a href="/page/4">4</a>
+            <a href="/page/5">5</a>
+            <a href="/page/next">Next &raquo;</a>
+        </nav>
+    </main>
+
+    <!-- Right sidebar navigation -->
+    <aside class="sidebar-right">
+        <nav class="quick-links">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/settings">Settings</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+
+        <nav class="social-nav">
+            <h3>Follow Us</h3>
+            <ul>
+                <li><a href="https://twitter.com/example">Twitter</a></li>
+                <li><a href="https://facebook.com/example">Facebook</a></li>
+                <li><a href="https://linkedin.com/example">LinkedIn</a></li>
+                <li><a href="https://instagram.com/example">Instagram</a></li>
+            </ul>
+        </nav>
+
+        <nav class="archives">
+            <h3>Archives</h3>
+            <ul>
+                <li><a href="/2026/01">January 2026</a></li>
+                <li><a href="/2025/12">December 2025</a></li>
+                <li><a href="/2025/11">November 2025</a></li>
+                <li><a href="/2025/10">October 2025</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Footer navigation -->
+    <footer>
+        <nav class="footer-nav">
+            <div class="footer-section">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/team">Team</a></li>
+                    <li><a href="/careers">Careers</a></li>
+                    <li><a href="/press">Press</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Products</h4>
+                <ul>
+                    <li><a href="/product1">Product 1</a></li>
+                    <li><a href="/product2">Product 2</a></li>
+                    <li><a href="/product3">Product 3</a></li>
+                    <li><a href="/pricing">Pricing</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="/docs">Documentation</a></li>
+                    <li><a href="/api">API</a></li>
+                    <li><a href="/guides">Guides</a></li>
+                    <li><a href="/community">Community</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                    <li><a href="/cookies">Cookie Policy</a></li>
+                    <li><a href="/gdpr">GDPR</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <nav class="footer-bottom">
+            <ul>
+                <li><a href="/sitemap">Sitemap</a></li>
+                <li><a href="/accessibility">Accessibility</a></li>
+                <li><a href="/contact">Contact</a></li>
+            </ul>
+        </nav>
+
+        <p>Copyright 2026 Navigation Test Site</p>
+    </footer>
+
+    <!-- Mobile menu toggle navigation -->
+    <nav class="mobile-menu">
+        <button class="menu-toggle">Menu</button>
+        <ul class="mobile-menu-items">
+            <li><a href="/">Home</a></li>
+            <li><a href="/menu">Menu Item 1</a></li>
+            <li><a href="/menu">Menu Item 2</a></li>
+            <li><a href="/menu">Menu Item 3</a></li>
+        </ul>
+    </nav>
+</body>
+</html>
