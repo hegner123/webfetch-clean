@@ -444,8 +444,8 @@ func TestHTTP_ToolsCall_FileToken(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 
 	// Create token via admin endpoint
-	adminBody := fmt.Sprintf(`{"file":"%s","expires_minutes":60}`, tmpfile.Name())
-	adminReq := httptest.NewRequest("POST", "/admin/tokens", strings.NewReader(adminBody))
+	adminBodyJSON, _ := json.Marshal(AdminTokenRequest{File: tmpfile.Name(), ExpiresMinutes: 60})
+	adminReq := httptest.NewRequest("POST", "/admin/tokens", strings.NewReader(string(adminBodyJSON)))
 	adminReq.Header.Set("X-API-Key", testAPIKey)
 	adminReq.Header.Set("Content-Type", "application/json")
 	adminRR := httptest.NewRecorder()
@@ -555,8 +555,8 @@ func TestHTTP_AdminTokens_Create(t *testing.T) {
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
-	body := fmt.Sprintf(`{"file":"%s"}`, tmpfile.Name())
-	req := httptest.NewRequest("POST", "/admin/tokens", strings.NewReader(body))
+	bodyJSON, _ := json.Marshal(AdminTokenRequest{File: tmpfile.Name()})
+	req := httptest.NewRequest("POST", "/admin/tokens", strings.NewReader(string(bodyJSON)))
 	req.Header.Set("X-API-Key", testAPIKey)
 	rr := httptest.NewRecorder()
 	srv.mux.ServeHTTP(rr, req)
@@ -597,8 +597,8 @@ func TestHTTP_AdminTokens_CustomExpiry(t *testing.T) {
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
-	body := fmt.Sprintf(`{"file":"%s","expires_minutes":120}`, tmpfile.Name())
-	req := httptest.NewRequest("POST", "/admin/tokens", strings.NewReader(body))
+	bodyJSON, _ := json.Marshal(AdminTokenRequest{File: tmpfile.Name(), ExpiresMinutes: 120})
+	req := httptest.NewRequest("POST", "/admin/tokens", strings.NewReader(string(bodyJSON)))
 	req.Header.Set("X-API-Key", testAPIKey)
 	rr := httptest.NewRecorder()
 	srv.mux.ServeHTTP(rr, req)
