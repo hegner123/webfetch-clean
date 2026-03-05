@@ -31,7 +31,7 @@ Unacceptable behavior will not be tolerated. Please report any concerns to the m
 
 ### Prerequisites
 
-- Go 1.23 or later
+- Go 1.25 or later
 - Git
 - Basic understanding of Go and MCP protocol
 
@@ -107,7 +107,7 @@ Follow these Go best practices:
 1. **Follow official Go style:**
    - Run `gofmt` on all code
    - Run `go vet` to catch common issues
-   - Use `golint` for style suggestions
+   - Run `golangci-lint run` for linting
 
 2. **Code organization:**
    - Keep functions small and focused (single responsibility)
@@ -140,7 +140,7 @@ func ProcessURL(url string, timeout int) (*Result, error) {
         return nil, fmt.Errorf("failed to fetch URL: %w", err)
     }
 
-    cleaned, err := CleanHTML(html, false, false)
+    cleaned, err := CleanHTML(html, false, false, false, "clean")
     if err != nil {
         return nil, fmt.Errorf("failed to clean HTML: %w", err)
     }
@@ -153,7 +153,7 @@ func ProcessURL(url string, timeout int) (*Result, error) {
     if url != "" {
         html, err := FetchURL(url, timeout)
         if err == nil {
-            cleaned, err := CleanHTML(html, false, false)
+            cleaned, err := CleanHTML(html, false, false, false, "clean")
             if err == nil {
                 return &Result{Content: cleaned}, nil
             } else {
@@ -315,7 +315,7 @@ including dependency conflicts and permission errors.
    ```bash
    gofmt -w .
    go vet ./...
-   golint ./...
+   golangci-lint run
    ```
 
 3. **Update documentation** if needed
@@ -403,8 +403,8 @@ What should happen
 What actually happens
 
 ## Environment
-- OS: macOS 14.2
-- Go version: 1.23
+- OS: macOS 15.x
+- Go version: 1.25+
 - webfetch-clean version: 1.0.0
 
 ## Additional Context
@@ -496,4 +496,4 @@ If you have questions about contributing, please:
 - Review existing documentation
 - Check closed issues for similar questions
 
-Thank you for contributing to webfetch-clean! 🎉
+Thank you for contributing to webfetch-clean!

@@ -1,180 +1,84 @@
 # Testing Guide
 
-This document describes the testing infrastructure for webfetch-clean.
-
-## Test Suite Overview
-
-The project includes comprehensive test coverage across all core components:
-
-### Test Files
-
-1. **fetcher_test.go** - HTTP client tests
-   - Valid URL fetching
-   - Error handling (404, 500, timeouts, empty content)
-   - HTTP headers verification
-   - Network error handling
-
-2. **cleaner_test.go** - HTML cleaning tests
-   - Script, style, nav removal
-   - Ad detection and removal
-   - Clutter removal (sidebar, footer, popups, modals, cookies)
-   - Iframe removal
-   - `preserveMainOnly` option
-   - `removeImages` option
-   - Attribute stripping
-   - Semantic element preservation
-
-3. **converter_test.go** - Format conversion tests
-   - HTML to Markdown conversion
-   - Heading, link, list, code conversion
-   - Image syntax conversion
-   - HTML format passthrough
-   - Invalid format handling
-
-4. **integration_test.go** - End-to-end tests
-   - Full pipeline (Fetch → Clean → Convert)
-   - Complex page cleaning
-   - Option combinations
-   - Real-world scenarios
-
 ## Running Tests
 
-### Run all tests
 ```bash
+# All tests
 go test -v ./...
-```
 
-### Run tests with coverage
-```bash
-go test -v -coverprofile="coverage.out" -covermode=atomic .
-go tool cover -html="coverage.out"  # View HTML report
-go tool cover -func="coverage.out"  # View function coverage
-```
+# Short mode (skips browser tests requiring Chromium)
+go test -v -short ./...
 
-### Run specific test
-```bash
+# With coverage
+go test -v -coverprofile=coverage.out -covermode=atomic ./...
+go tool cover -html=coverage.out   # HTML report
+go tool cover -func=coverage.out   # Per-function breakdown
+
+# With race detection
+go test -v -race ./...
+
+# Specific test
 go test -v -run TestCleanHTML_RemoveAds
 ```
 
-### Run tests with race detection
-```bash
-go test -v -race .
-```
+## Test Files
 
-## Coverage Report
+| File | Scope |
+|------|-------|
+| `browser_test.go` | Headless browser fetching (go-rod) |
+| `cleaner_test.go` | HTML cleaning pipeline, scrape mode |
+| `converter_test.go` | HTML/Markdown format conversion |
+| `fetcher_test.go` | HTTP client, timeouts, redirects, scheme validation, size limits |
+| `httpserver_test.go` | HTTP server endpoints, auth, TempStore, file tokens, over-limit handling |
+| `integration_test.go` | Full pipeline (fetch/read, clean, convert) |
+| `limit_test.go` | Output token limit and filename generation |
+| `reader_test.go` | Local file reading, permissions, edge cases |
+| `tokenstore_test.go` | SQLite token lifecycle (create, redeem, expire, cleanup) |
+| `unique_filename_test.go` | Collision-safe filename generation |
 
-Current coverage: **40.4%**
+## Coverage
 
-Coverage by component:
-- **fetcher.go**: 88.0% - Core HTTP fetching logic
-- **cleaner.go**: 89.8% - HTML cleaning pipeline
-- **converter.go**: 85.7-100% - Format conversion
-- **main.go**: 0.0% - CLI/MCP entry points (not covered)
+Overall: ~52% of statements.
 
-The main.go file has 0% coverage as it contains CLI and MCP server entry points that require integration testing. Core business logic has excellent test coverage.
+| Component | Coverage | Notes |
+|-----------|----------|-------|
+| `cleaner.go` | 90% | HTML cleaning pipeline |
+| `fetcher.go` | 91% | HTTP client |
+| `converter.go` | 86-100% | Format conversion |
+| `reader.go` | 93% | Local file reading |
+| `browser.go` | 79% | Headless browser (some tests require Chromium) |
+| `httpserver.go` | 66-100% | HTTP endpoints and TempStore |
+| `tokenstore.go` | 46-100% | SQLite token management |
+| `limit.go` | 80-89% | Output limits and filenames |
+| `main.go` | 0-70% | CLI/MCP entry points (processInput: 70%, handlers: 0%) |
+| `db/` | 0% | sqlc-generated code (no tests, exercised via tokenstore) |
 
-## GitHub Actions CI/CD
+## CI/CD
 
-The project includes automated testing via GitHub Actions:
+GitHub Actions workflow: `.github/workflows/test.yml`
 
-### Workflow: `.github/workflows/test.yml`
+**Test matrix:**
+- Platforms: Ubuntu, macOS, Windows
+- Go versions: 1.25, 1.26
 
 **Jobs:**
+1. **test** - Run tests with `-short -race -coverprofile -covermode=atomic`
+2. **build** - Build binary on all platforms, verify execution
+3. **release** - Cross-compile and publish on version tags
 
-1. **test** - Run tests on multiple platforms
-   - Platforms: Ubuntu, macOS
-   - Go versions: 1.21, 1.22, 1.23
-   - Runs tests with race detection
-   - Generates coverage reports
-   - Uploads coverage to Codecov
-
-2. **lint** - Code quality checks
-   - Runs golangci-lint
-   - Configuration: `.golangci.yml`
-
-3. **build** - Build verification
-   - Builds binary on multiple platforms
-   - Tests binary execution
-   - Uploads build artifacts
-
-### Triggers
-
-- Push to main/develop branches
-- Pull requests to main/develop branches
-- Manual workflow dispatch
-
-### Configuration
-
-Linting configuration is in `.golangci.yml` with enabled linters:
-- errcheck, gosimple, govet, ineffassign, staticcheck, unused
-- gofmt, goimports, misspell, revive
+Coverage uploaded to Codecov on ubuntu-latest with Go 1.26.
 
 ## Known Limitations
 
 ### Ad Detection
 
-The ad detection is intentionally aggressive. It matches patterns like:
-- `advertisement`
-- `ad-`, `-ad-`, `-ad`
-- `_ad_`, `_ad`, `ad_`
-- ` ad ` (space-surrounded)
+The ad detection is intentionally aggressive. Patterns like `-ad-`, `_ad_` may match legitimate class names (e.g., `thread-card`, `reader-mode`). This is acceptable because scrape mode (`--mode scrape`) bypasses all ad detection for cases where preservation matters.
 
-This means legitimate content with "ad" in class names may be removed:
-- `thread-card` matches `-ad-` pattern
-- `reader-mode` matches `-ad-` pattern
+### Browser Tests
 
-This is acceptable because:
-1. Better to be overly aggressive in removing ads
-2. Most legitimate content doesn't have "ad" surrounded by dashes
-3. Main semantic content is usually not affected
+Tests tagged with `skipping browser test in short mode` require a Chromium installation. Run without `-short` to execute them. CI uses `-short` to avoid browser dependency.
 
-## Test Maintenance
+### Windows
 
-### Adding New Tests
-
-1. Create test function with descriptive name: `TestComponentName_Behavior`
-2. Use table-driven tests for similar scenarios
-3. Include edge cases and error conditions
-4. Document complex test scenarios with comments
-
-### Testing Best Practices
-
-1. **Arrange-Act-Assert**: Structure tests clearly
-2. **Descriptive names**: Test names should describe what they test
-3. **Error messages**: Include helpful error messages in assertions
-4. **Independence**: Tests should not depend on each other
-5. **Fast tests**: Keep tests fast by using mocks/fakes where appropriate
-
-## Debugging Tests
-
-### View test output
-```bash
-go test -v .
-```
-
-### Debug specific test
-```bash
-go test -v -run TestName 2>&1 | less
-```
-
-### Add debug output
-```go
-t.Logf("Debug: variable = %v", variable)
-```
-
-## Future Improvements
-
-Potential testing enhancements:
-
-1. **MCP Protocol Tests**: Add tests for MCP JSON-RPC handlers
-2. **Benchmark Tests**: Add performance benchmarks for cleaning pipeline
-3. **Fuzzing**: Add fuzz tests for HTML parsing edge cases
-4. **E2E Tests**: Add tests that fetch real URLs (optional, slow)
-5. **Coverage Goal**: Aim for >80% coverage by testing CLI/MCP handlers
-
-## Resources
-
-- [Go Testing Package](https://pkg.go.dev/testing)
-- [Table-Driven Tests](https://github.com/golang/go/wiki/TableDrivenTests)
-- [Go Testing Best Practices](https://go.dev/doc/tutorial/add-a-test)
-- [Coverage Documentation](https://go.dev/blog/coverage)
+- `TestReadFile_PermissionDenied` is skipped (chmod doesn't remove read access on Windows)
+- File path tests use `json.Marshal` to handle backslash escaping in JSON payloads

@@ -72,7 +72,7 @@ This warning indicates that token consumption from WebFetch can be substantial e
 | **webfetch-clean** | Fetch HTML locally → Clean locally → Return markdown | ~166 tokens (display only) |
 | **Savings** | - | **2,334 tokens (93% reduction)** |
 
-**Cost Impact:** At typical API rates, this is approximately $0.015 saved per fetch (using Claude Sonnet 4.5 pricing).
+**Cost Impact:** At typical API rates, this is approximately $0.015 saved per fetch (using Claude Sonnet pricing).
 
 ---
 
@@ -224,7 +224,7 @@ You can verify these savings by:
 This case study is based on:
 - Anthropic's official documentation as of January 13, 2026
 - Real-world testing conducted on January 13, 2026
-- Claude Sonnet 4.5 pricing as of January 2026
+- Claude Sonnet pricing as of January 2026
 
 Token costs, pricing models, tool behavior, and API features may change. Always consult the latest Anthropic documentation and your actual API usage metrics for current information.
 
