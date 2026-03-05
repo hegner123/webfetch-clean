@@ -53,6 +53,10 @@ example-com.md
 # Environment secrets
 .env
 
+# HTML test files
+*.html
+test-sites/
+
 # OS
 .DS_Store
 Thumbs.db
