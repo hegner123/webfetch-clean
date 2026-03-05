@@ -38,7 +38,7 @@ Windows binaries (`webfetch-clean-windows-amd64.exe`, `webfetch-clean-windows-ar
 
 ### Build from Source
 
-Requires Go 1.23+.
+Requires Go 1.25+.
 
 ```bash
 git clone https://github.com/hegner123/webfetch-clean.git
