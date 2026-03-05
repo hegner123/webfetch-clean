@@ -170,18 +170,39 @@ Beyond cost savings, webfetch-clean provides:
 
 ## Technical Implementation
 
-webfetch-clean achieves these savings through:
+webfetch-clean is a compiled Go binary that runs the entire pipeline locally:
 
-1. **Local HTTP Client:** Uses Go's standard `net/http` library
-2. **HTML Parsing:** Uses `goquery` for jQuery-like HTML manipulation
-3. **Multi-pass Cleaning:**
-   - Removes `<head>`, `<script>`, `<style>`, `<nav>` elements
-   - Removes ad-related elements (class/id patterns)
-   - Removes tracking iframes
-   - Removes clutter (footer, aside, sidebar, popups, modals, social widgets)
-   - Strips inline attributes (preserves only href, src, alt, title)
-4. **Markdown Conversion:** Uses `html-to-markdown` library for clean conversion
-5. **Zero API Calls:** All processing happens locally in compiled Go binary
+```
+Input (URL, browser-rendered URL, or local file)
+  -> Fetch / Read
+  -> Clean HTML (multi-pass)
+  -> Convert to Markdown or HTML
+  -> Output (with token-aware size management)
+```
+
+**Input stage:**
+- **Standard HTTP client** (`net/http`) for static pages, with redirect tracking, scheme validation, 50MB response limit, and configurable timeouts
+- **Headless browser** (`go-rod`) for JavaScript-rendered pages (SPAs, Next.js, Vue, Svelte). Launches headless Chromium, executes page JavaScript, waits for DOM stabilization, then captures the fully rendered HTML. Activated via `--browser` flag or `use_browser` MCP parameter.
+- **Local file reader** for processing HTML files already on disk
+
+**Cleaning stage** (`goquery` for DOM manipulation):
+- Two processing modes: **clean** (aggressive, removes ads/scripts/nav/clutter/tracking/inline attributes) and **scrape** (light, removes only `<head>`, preserves page structure for ingestion workflows)
+- Clean mode runs five passes: remove head/script/style/nav, remove ad elements by class/id pattern, remove tracking iframes, remove clutter (footer/aside/sidebar/popup/modal/cookie/social/comments), strip non-semantic attributes (preserves only href, src, alt, title)
+
+**Conversion stage:**
+- HTML passthrough or Markdown conversion via `html-to-markdown` library
+
+**Output stage:**
+- Token-aware size management (default 100k token limit, 3 bytes = 1 token)
+- CLI/MCP: writes oversized content to file
+- HTTP: stores oversized content in memory with 60s TTL, returns retrieval options
+
+**Triple-mode operation:**
+- **MCP server** (stdio, default): JSON-RPC 2.0 for Claude Code integration
+- **CLI tool** (`--cli`): command-line usage with flags
+- **HTTP server** (`--http`): REST API with API key auth, file access tokens, Docker/Caddy deployment
+
+Zero API calls at every stage. All processing happens in the local binary.
 
 ---
 
